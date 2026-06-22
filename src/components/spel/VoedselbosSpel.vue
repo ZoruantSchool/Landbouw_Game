@@ -13,15 +13,12 @@ import StartScherm from './schermen/StartScherm.vue'
 const huidigScherm = ref<SpelScherm>('start')
 const gekozenLevel = ref(1)
 const {
-  bordBreedte,
-  bordHoogte,
-  bordVerschuiving,
   geselecteerdItem,
-  gevuldeVakjes,
   laatItemLos,
   maakVakjeLeeg,
   plaatsItem,
-  rasterGrootte,
+  rasterKolommen,
+  rasterRijen,
   resetBord,
   startSlepen,
   vakjes,
@@ -43,6 +40,10 @@ function speelLevelOpnieuw() {
 }
 
 function openVolgendLevel() {
+  if (gekozenLevel.value >= aantalLevels) {
+    return
+  }
+
   openLevel(gekozenLevel.value + 1)
 }
 </script>
@@ -66,6 +67,7 @@ function openVolgendLevel() {
 
   <LevelEindeScherm
     v-else-if="huidigScherm === 'einde'"
+    :aantal-levels="aantalLevels"
     :level="gekozenLevel"
     @levels="huidigScherm = 'levelKeuze'"
     @opnieuw="speelLevelOpnieuw"
@@ -85,11 +87,8 @@ function openVolgendLevel() {
     />
 
     <VoedselbosBord
-      :bord-breedte="bordBreedte"
-      :bord-hoogte="bordHoogte"
-      :bord-verschuiving="bordVerschuiving"
-      :gevulde-vakjes="gevuldeVakjes"
-      :raster-grootte="rasterGrootte"
+      :raster-kolommen="rasterKolommen"
+      :raster-rijen="rasterRijen"
       :vakjes="vakjes"
       @laat-item-los="laatItemLos"
       @maak-vakje-leeg="maakVakjeLeeg"

@@ -2,11 +2,8 @@
 import type { VoedselbosVakje } from '../../types/spel'
 
 defineProps<{
-  bordBreedte: number
-  bordHoogte: number
-  bordVerschuiving: number
-  gevuldeVakjes: VoedselbosVakje[]
-  rasterGrootte: number
+  rasterKolommen: number
+  rasterRijen: number
   vakjes: VoedselbosVakje[]
 }>()
 
@@ -22,8 +19,8 @@ defineEmits<{
     <div
       class="bord"
       :style="{
-        width: `${bordBreedte}px`,
-        height: `${bordHoogte}px`,
+        gridTemplateColumns: `repeat(${rasterKolommen}, 1fr)`,
+        gridTemplateRows: `repeat(${rasterRijen}, 1fr)`,
       }"
     >
       <button
@@ -31,32 +28,15 @@ defineEmits<{
         :key="vakje.index"
         type="button"
         class="vakje"
-        :class="{ gevuld: vakje.item }"
-        :style="{
-          left: `${vakje.x + bordVerschuiving}px`,
-          top: `${vakje.y}px`,
-          zIndex: vakje.item ? rasterGrootte * rasterGrootte + vakje.rij + vakje.kolom : vakje.rij + vakje.kolom,
-        }"
+        :class="[`terrein-${vakje.terrein}`, { gevuld: vakje.item }]"
         :aria-label="`Vak rij ${vakje.rij + 1}, kolom ${vakje.kolom + 1}${vakje.item ? ': ' + vakje.item.naam : ''}`"
         @click="$emit('plaatsItem', vakje.index)"
         @contextmenu.prevent="$emit('maakVakjeLeeg', vakje.index)"
         @dragover.prevent
         @drop="$emit('laatItemLos', vakje.index)"
       >
+        <span v-if="vakje.item">{{ vakje.item.naam }}</span>
       </button>
-
-      <div
-        v-for="vakje in gevuldeVakjes"
-        :key="`item-${vakje.index}`"
-        class="geplaatst-item"
-        :style="{
-          left: `${vakje.x + bordVerschuiving}px`,
-          top: `${vakje.y}px`,
-          zIndex: rasterGrootte * rasterGrootte + vakje.rij + vakje.kolom,
-        }"
-      >
-        <small>{{ vakje.item?.naam }}</small>
-      </div>
     </div>
 
     <p>Klik of sleep een item naar een vak. Rechtermuisklik maakt een vak leeg.</p>
@@ -67,44 +47,66 @@ defineEmits<{
 .bord-gebied {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
+  overflow: auto;
   padding: 24px;
+  background: #071b0d;
 }
 
 .bord {
-  position: relative;
+  display: grid;
+  width: min(100%, 960px);
+  aspect-ratio: 16 / 14;
   margin: 0 auto;
-  max-width: 100%;
+  border: 2px solid #14a8ff;
+  background: #3f7542;
 }
 
 .vakje {
-  position: absolute;
-  width: 72px;
-  height: 36px;
-  border: 0;
-  background: #8bc46b;
-  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
-  transform: translate(-50%, 0);
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0;
+  padding: 2px;
 }
 
 .vakje:hover,
 .vakje:focus {
-  background: #9ed17f;
+  position: relative;
+  z-index: 1;
+  outline: 2px solid #f3ca32;
+  outline-offset: -2px;
 }
 
-.geplaatst-item {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: #111;
+.terrein-grasland {
+  background: #3f7542;
+}
+
+.terrein-water {
+  background: #39788b;
+}
+
+.terrein-heuvel {
+  background: #725f3d;
+}
+
+.terrein-schaduw {
+  background: #817d68;
+}
+
+.vakje.gevuld {
+  box-shadow: inset 0 0 0 3px #f3ca32;
+}
+
+.vakje span {
+  max-width: 100%;
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 9px;
   font-weight: 700;
-  transform: translate(-50%, -22px);
-  transform-origin: bottom center;
-  pointer-events: none;
-}
-
-.geplaatst-item small {
-  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
