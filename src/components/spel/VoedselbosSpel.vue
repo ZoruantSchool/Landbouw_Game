@@ -9,9 +9,11 @@ import GerechtenScherm from './schermen/GerechtenScherm.vue'
 import LevelEindeScherm from './schermen/LevelEindeScherm.vue'
 import LevelKeuzeScherm from './schermen/LevelKeuzeScherm.vue'
 import StartScherm from './schermen/StartScherm.vue'
+import IntroductieScherm from './schermen/IntroductieScherm.vue'
 
 const huidigScherm = ref<SpelScherm>('start')
 const gekozenLevel = ref(1)
+const hoogsteVoltooideLevel = ref(0)
 const {
   geselecteerdItem,
   laatItemLos,
@@ -25,12 +27,17 @@ const {
 } = useVoedselbosBord({ standaardItem: standaardVoedselbosItem })
 
 function openLevel(level: number) {
+  if (level > hoogsteVoltooideLevel.value + 1 || level > aantalLevels) {
+    return
+  }
+
   gekozenLevel.value = level
   resetBord()
   huidigScherm.value = 'spel'
 }
 
 function rondLevelAf() {
+  hoogsteVoltooideLevel.value = Math.max(hoogsteVoltooideLevel.value, gekozenLevel.value)
   huidigScherm.value = 'einde'
 }
 
@@ -49,11 +56,20 @@ function openVolgendLevel() {
 </script>
 
 <template>
-  <StartScherm v-if="huidigScherm === 'start'" @start="huidigScherm = 'levelKeuze'" />
+  <StartScherm
+    v-if="huidigScherm === 'start'"
+    @start="huidigScherm = 'introductie'"
+  />
+
+  <IntroductieScherm
+    v-else-if="huidigScherm === 'introductie'"
+    @begin="huidigScherm = 'levelKeuze'"
+  />
 
   <LevelKeuzeScherm
     v-else-if="huidigScherm === 'levelKeuze'"
     :aantal-levels="aantalLevels"
+    :hoogste-voltooide-level="hoogsteVoltooideLevel"
     @open-gerechten="huidigScherm = 'gerechten'"
     @open-level="openLevel"
     @terug="huidigScherm = 'start'"
@@ -100,9 +116,9 @@ function openVolgendLevel() {
 <style scoped>
 .spel {
   display: flex;
-  gap: 24px;
-  align-items: flex-start;
-  padding: 16px;
+  min-height: 100vh;
+  align-items: stretch;
+  background: #071b0d;
   overflow-x: hidden;
 }
 

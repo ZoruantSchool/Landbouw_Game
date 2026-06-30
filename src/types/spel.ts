@@ -1,8 +1,11 @@
 export type VoedselbosItem = {
+  beschrijving: string
+  icoon: string
   naam: string
+  terrein: string
 }
 
-export type SpelScherm = 'start' | 'levelKeuze' | 'gerechten' | 'spel' | 'einde'
+export type SpelScherm = 'start' | 'introductie' | 'levelKeuze' | 'gerechten' | 'spel' | 'einde'
 
 export type TerreinSoort = 'grasland' | 'water' | 'heuvel' | 'schaduw'
 
