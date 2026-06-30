@@ -5,7 +5,14 @@ export type VoedselbosItem = {
   terrein: string
 }
 
-export type SpelScherm = 'start' | 'introductie' | 'levelKeuze' | 'gerechten' | 'spel' | 'einde'
+export type SpelScherm =
+  | 'start'
+  | 'introductie'
+  | 'levelKeuze'
+  | 'levelUitleg'
+  | 'gerechten'
+  | 'spel'
+  | 'einde'
 
 export type TerreinSoort = 'grasland' | 'water' | 'heuvel' | 'schaduw'
 

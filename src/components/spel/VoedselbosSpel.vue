@@ -10,6 +10,7 @@ import LevelEindeScherm from './schermen/LevelEindeScherm.vue'
 import LevelKeuzeScherm from './schermen/LevelKeuzeScherm.vue'
 import StartScherm from './schermen/StartScherm.vue'
 import IntroductieScherm from './schermen/IntroductieScherm.vue'
+import LevelDrieUitlegScherm from './schermen/LevelDrieUitlegScherm.vue'
 
 const huidigScherm = ref<SpelScherm>('start')
 const gekozenLevel = ref(1)
@@ -33,7 +34,7 @@ function openLevel(level: number) {
 
   gekozenLevel.value = level
   resetBord()
-  huidigScherm.value = 'spel'
+  huidigScherm.value = level === 3 ? 'levelUitleg' : 'spel'
 }
 
 function rondLevelAf() {
@@ -78,6 +79,12 @@ function openVolgendLevel() {
   <GerechtenScherm
     v-else-if="huidigScherm === 'gerechten'"
     :gerechten="gerechten"
+    @terug="huidigScherm = 'levelKeuze'"
+  />
+
+  <LevelDrieUitlegScherm
+    v-else-if="huidigScherm === 'levelUitleg'"
+    @start="huidigScherm = 'spel'"
     @terug="huidigScherm = 'levelKeuze'"
   />
 
