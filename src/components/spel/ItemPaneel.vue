@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import gewassenNaamIcoon from '../../assets/gewassen-naam-icoon.png'
 import type { VoedselbosItem } from '../../types/spel'
 
 defineProps<{
@@ -39,9 +40,15 @@ defineEmits<{
         @click="$emit('selecteer', item)"
         @dragstart="$emit('startSlepen', item)"
       >
-        <span class="gewas-icoon">{{ item.icoon }}</span>
+        <span class="gewas-icoon">
+          <img v-if="item.afbeelding" :src="item.afbeelding" :alt="item.naam" />
+          <span v-else>{{ item.icoon }}</span>
+        </span>
         <span class="gewas-inhoud">
-          <strong>{{ item.naam }}</strong>
+          <strong>
+            <span>{{ item.naam }}</span>
+            <img :src="gewassenNaamIcoon" alt="" />
+          </strong>
           <small>{{ item.terrein }}</small>
           <small>{{ item.beschrijving }}</small>
         </span>
@@ -130,8 +137,19 @@ defineEmits<{
 }
 
 .gewas-icoon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  overflow: hidden;
   font-size: 24px;
   text-align: center;
+}
+
+.gewas-icoon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .gewas-inhoud {
@@ -140,8 +158,26 @@ defineEmits<{
 }
 
 .gewas-inhoud strong {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
   overflow: hidden;
   font-size: 12px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.gewas-inhoud strong img {
+  width: 15px;
+  height: 12px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.gewas-inhoud strong span {
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

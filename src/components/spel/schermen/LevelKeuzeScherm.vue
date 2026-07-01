@@ -22,7 +22,7 @@ const levels = [
     duur: '5 min',
     moeilijkheid: 'Makkelijk',
     nummer: 1,
-    planten: '5 planten',
+    planten: '8 planten',
     titel: 'Pioniersfase',
   },
   {
@@ -40,7 +40,7 @@ const levels = [
     duur: '12 min',
     moeilijkheid: 'Uitdagend',
     nummer: 3,
-    planten: '12 planten',
+    planten: '8 planten',
     titel: 'Lagen & samenwerking',
   },
 ]
@@ -50,7 +50,7 @@ function isVoltooid(level: number) {
 }
 
 function isVergrendeld(level: number) {
-  return level > props.hoogsteVoltooideLevel + 1
+  return level > props.aantalLevels
 }
 
 function isHuidig(level: number) {

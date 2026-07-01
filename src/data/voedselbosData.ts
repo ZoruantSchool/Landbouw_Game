@@ -1,57 +1,71 @@
 import type { VoedselbosItem } from '../types/spel'
+import brandnetelAfbeelding from '../assets/plant-brandnetel.png'
+import daslookAfbeelding from '../assets/plant-daslook.png'
+import hazelaarAfbeelding from '../assets/plant-hazelaar.png'
+import walnootboomAfbeelding from '../assets/plant-walnootboom.png'
+import wildeAardbeienAfbeelding from '../assets/plant-wilde-aardbeien.png'
+import wildeAppelAfbeelding from '../assets/plant-wilde-appel.png'
+import wildeKnoflookAfbeelding from '../assets/plant-wilde-knoflook.png'
 
 export const aantalLevels = 3
 
 export const standaardVoedselbosItem: VoedselbosItem = {
-  beschrijving: 'Geschikt voor zonnige vakken',
+  afbeelding: walnootboomAfbeelding,
+  beschrijving: 'Grote boom die ruimte en schaduw maakt',
   icoon: '🌳',
-  naam: 'Appelboom',
-  terrein: 'Grasland',
+  naam: 'Walnootboom',
+  terrein: 'Heuvel',
 }
 
 export const voedselbosItems: VoedselbosItem[] = [
   standaardVoedselbosItem,
   {
-    beschrijving: 'Groeit goed naast bomen',
+    afbeelding: hazelaarAfbeelding,
+    beschrijving: 'Struiklaag die goed bij bomen past',
+    icoon: '🌰',
+    naam: 'Hazelaar',
+    terrein: 'Grasland',
+  },
+  {
+    afbeelding: wildeAppelAfbeelding,
+    beschrijving: 'Fruitboom voor lichte plekken',
+    icoon: '🍎',
+    naam: 'Wilde Appel',
+    terrein: 'Grasland',
+  },
+  {
+    beschrijving: 'Bloeit aan bosranden en trekt insecten aan',
     icoon: '🌿',
-    naam: 'Bessenstruik',
-    terrein: 'Grasland',
-  },
-  {
-    beschrijving: 'Past tussen andere gewassen',
-    icoon: '🫙',
-    naam: 'Kruiden',
-    terrein: 'Alle terreinen',
-  },
-  {
-    beschrijving: 'Heeft een open plek nodig',
-    icoon: '🌾',
-    naam: 'Graan',
-    terrein: 'Grasland',
-  },
-  {
-    beschrijving: 'Groeit langs het water',
-    icoon: '☘️',
-    naam: 'Waterkers',
-    terrein: 'Waterloop',
-  },
-  {
-    beschrijving: 'Geschikt voor hoger terrein',
-    icoon: '🌲',
-    naam: 'Notenboom',
-    terrein: 'Heuvel',
-  },
-  {
-    beschrijving: 'Groeit op donkere plekken',
-    icoon: '🍄',
-    naam: 'Paddenstoelen',
+    naam: 'Vlier',
     terrein: 'Schaduw',
   },
   {
-    beschrijving: 'Verbetert de bodem',
-    icoon: '♻️',
-    naam: 'Composthoop',
+    afbeelding: daslookAfbeelding,
+    beschrijving: 'Kruidlaag voor koele, beschutte plekken',
+    icoon: '🌱',
+    naam: 'Daslook',
+    terrein: 'Schaduw',
+  },
+  {
+    afbeelding: wildeAardbeienAfbeelding,
+    beschrijving: 'Bodembedekker met eetbare vruchten',
+    icoon: '🍓',
+    naam: 'Wilde Aardbeien',
     terrein: 'Grasland',
+  },
+  {
+    afbeelding: wildeKnoflookAfbeelding,
+    beschrijving: 'Kruid dat graag in de onderlaag groeit',
+    icoon: '🧄',
+    naam: 'Wilde Knoflook',
+    terrein: 'Schaduw',
+  },
+  {
+    afbeelding: brandnetelAfbeelding,
+    beschrijving: 'Sterke plant die de bodem voedt',
+    icoon: '🌿',
+    naam: 'Brandnetel',
+    terrein: 'Akker',
   },
 ]
 

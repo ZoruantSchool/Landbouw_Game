@@ -1,4 +1,5 @@
 export type VoedselbosItem = {
+  afbeelding?: string
   beschrijving: string
   icoon: string
   naam: string

@@ -35,7 +35,10 @@ defineEmits<{
         @dragover.prevent
         @drop="$emit('laatItemLos', vakje.index)"
       >
-        <span v-if="vakje.item">{{ vakje.item.naam }}</span>
+        <span v-if="vakje.item" class="vakje-inhoud">
+          <img v-if="vakje.item.afbeelding" :src="vakje.item.afbeelding" :alt="vakje.item.naam" />
+          <span v-else class="vakje-icoon">{{ vakje.item.icoon }}</span>
+        </span>
       </button>
     </div>
 
@@ -100,13 +103,24 @@ defineEmits<{
   box-shadow: inset 0 0 0 3px #f3ca32;
 }
 
-.vakje span {
-  max-width: 100%;
-  overflow: hidden;
-  color: #ffffff;
-  font-size: 9px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.vakje-inhoud {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  place-items: center;
 }
+
+.vakje-inhoud img {
+  width: 82%;
+  height: 82%;
+  min-height: 0;
+  object-fit: contain;
+}
+
+.vakje-icoon {
+  font-size: clamp(14px, 2vw, 30px);
+  line-height: 1;
+}
+
 </style>

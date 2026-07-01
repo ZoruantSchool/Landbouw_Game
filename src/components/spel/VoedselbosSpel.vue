@@ -28,7 +28,7 @@ const {
 } = useVoedselbosBord({ standaardItem: standaardVoedselbosItem })
 
 function openLevel(level: number) {
-  if (level > hoogsteVoltooideLevel.value + 1 || level > aantalLevels) {
+  if (level < 1 || level > aantalLevels) {
     return
   }
 
