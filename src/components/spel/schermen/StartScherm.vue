@@ -4,6 +4,7 @@ import studiestapLogo from '../../../assets/studiestap-logo.svg'
 
 defineEmits<{
   start: []
+  uitleg: []
 }>()
 </script>
 
@@ -36,7 +37,7 @@ defineEmits<{
       <p class="ondertitel">Leer bouwen aan de toekomst van de landbouw</p>
       <span class="scheidingslijn"></span>
       <button type="button" class="speel-knop" @click="$emit('start')">Speel nu</button>
-      <button type="button" class="uitleg-knop">Hoe werkt het?</button>
+      <button type="button" class="uitleg-knop" @click="$emit('uitleg')">Hoe werkt het?</button>
     </section>
 
   </main>

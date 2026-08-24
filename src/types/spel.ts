@@ -25,6 +25,7 @@ export type SpelScherm =
   | 'introductie'
   | 'levelKeuze'
   | 'levelUitleg'
+  | 'hoeWerktHet'
   | 'plantenInfo'
   | 'gerechten'
   | 'spel'
