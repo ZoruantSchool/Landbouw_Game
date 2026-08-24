@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { aantalLevels, gerechten, levelDrieCombos, standaardVoedselbosItem, voedselbosItems } from '../../data/voedselbosData'
+import { computed, ref, watch } from 'vue'
+import { gerechten } from '../../data/voedselbosData'
+import { planten, standaardVoedselbosItem } from '../../data/planten'
+import { levels, vindLevel } from '../../data/levels'
 import type { SpelScherm, TerreinSoort, VoedselbosPlaatsing } from '../../types/spel'
 import { useVoedselbosBord } from '../../composables/useVoedselbosBord'
 import studiestapLogo from '../../assets/studiestap-logo.svg'
+import tutorialScarecrow from '../../assets/tutorial-scarecrow.png'
 import ItemPaneel from './ItemPaneel.vue'
 import VoedselbosBord from './VoedselbosBord.vue'
 import GerechtenScherm from './schermen/GerechtenScherm.vue'
@@ -12,19 +15,40 @@ import LevelKeuzeScherm from './schermen/LevelKeuzeScherm.vue'
 import StartScherm from './schermen/StartScherm.vue'
 import IntroductieScherm from './schermen/IntroductieScherm.vue'
 import LevelDrieUitlegScherm from './schermen/LevelDrieUitlegScherm.vue'
+import AllePlantenScherm from './schermen/AllePlantenScherm.vue'
 
 const huidigScherm = ref<SpelScherm>('start')
+const vorigSchermVoorPlanten = ref<SpelScherm>('levelKeuze')
+const informatiePlantId = ref<string>()
 const gekozenLevel = ref(1)
 const hoogsteVoltooideLevel = ref(0)
-const doelAantal = voedselbosItems.reduce((totaal, item) => totaal + (item.aantal ?? 1), 0)
-const terreinen = [
-  { kleur: '#3e7540', naam: 'Grasland' },
-  { kleur: '#397887', naam: 'Water' },
-  { kleur: '#686d5f', naam: 'Heuvel' },
-  { kleur: '#2d4824', naam: 'Schaduw' },
-  { kleur: '#819452', naam: 'Oever' },
-  { kleur: '#725f35', naam: 'Akker' },
+const tutorialStap = ref(-1)
+const tutorialComboGetoond = ref(false)
+const actiefLevel = computed(() => vindLevel(gekozenLevel.value))
+const plantenPerId = computed(() => new Map(planten.map((plant) => [plant.id, plant])))
+const actieveItems = computed(() =>
+  actiefLevel.value.plantIds
+    .map((id) => plantenPerId.value.get(id))
+    .map((item) => (
+      actiefLevel.value.nummer === 1 && item?.id === 'elstarboom'
+        ? { ...item, naam: 'Walnootboom' }
+        : item
+    ))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item)),
+)
+const doelAantal = computed(() => actieveItems.value.reduce((totaal, item) => totaal + (item.aantal ?? 1), 0))
+const alleTerreinen: { id: TerreinSoort; kleur: string; naam: string }[] = [
+  { id: 'grasland', kleur: '#3e7540', naam: 'Grasland' },
+  { id: 'water', kleur: '#397887', naam: 'Water' },
+  { id: 'heuvel', kleur: '#686d5f', naam: 'Heuvel' },
+  { id: 'schaduw', kleur: '#2d4824', naam: 'Schaduw' },
+  { id: 'oever', kleur: '#819452', naam: 'Oever' },
+  { id: 'akker', kleur: '#725f35', naam: 'Akker' },
 ]
+const terreinen = computed(() => {
+  const gebruikteTerreinen = new Set(actiefLevel.value.terreinKaart.flat())
+  return alleTerreinen.filter((terrein) => gebruikteTerreinen.has(terrein.id))
+})
 const {
   geselecteerdItem,
   laatItemLos,
@@ -36,18 +60,191 @@ const {
   resetBord,
   startSlepen,
   vakjes,
-} = useVoedselbosBord({ standaardItem: standaardVoedselbosItem })
+} = useVoedselbosBord({
+  standaardItem: standaardVoedselbosItem,
+  terreinKaart: () => actiefLevel.value.terreinKaart,
+})
 
 const geplaatstAantal = computed(() => plaatsingen.value.length)
 const bezetteVakjes = computed(() => vakjes.value.filter((vakje) => vakje.item).length)
 const vrijeVakjes = computed(() => vakjes.value.length - bezetteVakjes.value)
-const resterendAantal = computed(() => Math.max(0, doelAantal - geplaatstAantal.value))
-const voortgangGraden = computed(() => `${(geplaatstAantal.value / doelAantal) * 360}deg`)
+const resterendAantal = computed(() => Math.max(0, doelAantal.value - geplaatstAantal.value))
+const voortgangGraden = computed(() => `${(geplaatstAantal.value / doelAantal.value) * 360}deg`)
 const scoreResultaat = computed(() => berekenLevelDrieScore(plaatsingen.value))
-const kanAfronden = computed(() => geplaatstAantal.value >= doelAantal)
+const kanAfronden = computed(() => geplaatstAantal.value >= doelAantal.value)
+const totaleOpbrengst = computed(() =>
+  Math.round(plaatsingen.value.reduce((totaal, plaatsing) => totaal + berekenPlaatsingOpbrengst(plaatsing), 0) * 10) / 10,
+)
+const geschikteTerreinen = computed(() => geselecteerdItem.value.correctTerreinen ?? [])
+const isLevelEen = computed(() => actiefLevel.value.nummer === 1)
+const vergrendeldeItemIds = computed(() => {
+  if (!isLevelEen.value || tutorialStap.value < 0 || tutorialStap.value >= 6) {
+    return []
+  }
+
+  const toegestaan = tutorialStap.value === 5 ? 'witte_klaver' : 'elstarboom'
+  return actieveItems.value
+    .map((item) => item.id ?? item.naam)
+    .filter((id) => id !== toegestaan)
+})
+const tutorialInfo = computed(() => {
+  const stappen = [
+    {
+      label: '',
+      titel: 'Wat is een voedselbos?',
+      tekst: 'Een voedselbos is een tuin met lagen - bomen, struiken en kruiden die elkaar helpen.',
+      extra: 'Jij plaatst de planten op het grid. Hoe beter je kiest, hoe hoger je score en hoe rijker het gerecht.',
+      knop: 'Beginnen ->',
+      fullscreen: true,
+    },
+    {
+      label: '1/8',
+      titel: 'Elk vakje heeft een kleur. Die kleur = het terrein.',
+      tekst: 'Grasland = lichtgroen. Oever = donkergroen. Water = blauw - niet speelbaar.',
+      knop: 'Volgende',
+    },
+    {
+      label: '2/8',
+      titel: 'Klik op een plant links om hem te selecteren.',
+      tekst: 'De Walnootboom staat al voor je geselecteerd. Andere planten zijn nog vergrendeld.',
+      knop: 'Volgende',
+    },
+    {
+      label: '3/8',
+      titel: "Klik op 'Planten' rechtsboven voor info over elke plant.",
+      tekst: 'Wetenschappelijke naam, terrein, eigenschappen en beste combinaties.',
+      knop: 'Volgende',
+    },
+    {
+      label: '4/8',
+      titel: 'De Walnootboom is 2x2 - hij bezet 4 vakjes tegelijk.',
+      tekst: 'Klik op een vakje om hem neer te zetten. Hij past alleen op grasland.',
+      knop: '',
+    },
+    {
+      label: '5/8',
+      titel: 'Goed! Walnootboom op grasland = correct terrein.',
+      tekst: 'Fout terrein = 0 punten. Correct terrein = 1 of 2 punten.',
+      knop: 'Volgende',
+    },
+    {
+      label: '6/8',
+      titel: 'De vakjes rondom de Walnootboom = invloedszone.',
+      tekst: 'Witte Klaver hier plaatsen trekt bestuivers aan en geeft 2 punten. Buiten de zone = 1 punt.',
+      knop: 'Volgende',
+    },
+    {
+      label: '7/8',
+      titel: 'Bestuiverscombo - Walnootboom + Witte Klaver op grasland',
+      tekst: 'Witte Klaver trekt bijen en hommels aan die ook de appelbloesem bezoeken. Dit geeft +3 bonuspunten op het eindscherm.',
+      knop: 'Begrepen',
+    },
+    {
+      label: '8/8',
+      titel: 'Correct terrein + nabijheid voldaan = 2 punten',
+      tekst: 'Alleen correct terrein = 1 punt. Fout terrein = 0 punten. Combo’s geven bovendien bonuspunten bovenop.',
+      knop: 'Begrepen, speel verder',
+    },
+  ]
+
+  return stappen[tutorialStap.value]
+})
+const gemarkeerdeItemIds = computed(() => {
+  if (!isLevelEen.value || tutorialStap.value < 0) return []
+  if ([2, 4, 5, 6].includes(tutorialStap.value)) return ['elstarboom']
+  if (tutorialStap.value === 7) return ['elstarboom', 'witte_klaver']
+  if (tutorialStap.value === 8) return actiefLevel.value.plantIds
+  return []
+})
+const gemarkeerdeTerreinen = computed(() => {
+  if (!isLevelEen.value || tutorialStap.value < 0) return []
+  if (tutorialStap.value === 1) return ['grasland', 'oever', 'water']
+  if (tutorialStap.value === 4) return ['grasland']
+  return []
+})
+const elstarPlaatsingen = computed(() => plaatsingenVan('elstarboom'))
+const gemarkeerdePlaatsingIds = computed(() => {
+  if (!isLevelEen.value || tutorialStap.value < 0) return []
+  if ([5, 6].includes(tutorialStap.value)) return elstarPlaatsingen.value.map((plaatsing) => plaatsing.id)
+  if (tutorialStap.value === 7) {
+    return plaatsingen.value
+      .filter((plaatsing) => ['elstarboom', 'witte_klaver'].includes(itemId(plaatsing)))
+      .map((plaatsing) => plaatsing.id)
+  }
+  return []
+})
+const gemarkeerdeVakjes = computed(() => {
+  if (!isLevelEen.value || tutorialStap.value < 0) return []
+
+  if (tutorialStap.value === 1) {
+    return vakjes.value.map((vakje) => vakje.index)
+  }
+
+  if (tutorialStap.value === 4) {
+    return vakjes.value
+      .filter((vakje) => vakje.terrein === 'grasland' && !vakje.item)
+      .map((vakje) => vakje.index)
+  }
+
+  if ([6, 7].includes(tutorialStap.value)) {
+    const indices = new Set<number>()
+    elstarPlaatsingen.value.forEach((plaatsing) => {
+      plaatsing.vakjes.forEach((index) => {
+        const { rij, kolom } = coordinaten(index)
+        for (let rijOffset = -1; rijOffset <= 1; rijOffset += 1) {
+          for (let kolomOffset = -1; kolomOffset <= 1; kolomOffset += 1) {
+            const doelRij = rij + rijOffset
+            const doelKolom = kolom + kolomOffset
+            const doelIndex = doelRij * rasterKolommen.value + doelKolom
+            if (
+              doelRij >= 0
+              && doelKolom >= 0
+              && doelRij < rasterRijen.value
+              && doelKolom < rasterKolommen.value
+              && !plaatsing.vakjes.includes(doelIndex)
+            ) {
+              indices.add(doelIndex)
+            }
+          }
+        }
+      })
+    })
+    return [...indices]
+  }
+
+  return []
+})
+const plaatsingEffecten = computed<Record<number, {
+  status: 'positief' | 'neutraal' | 'negatief'
+  tekst: string
+}>>(() =>
+  Object.fromEntries(plaatsingen.value.map((plaatsing) => {
+    const correctTerrein = heeftCorrectTerrein(plaatsing)
+    const gunstigeBuren = voldoetAanNabijheid(plaatsing)
+    const naam = plantNaam(plaatsing.item)
+    const status: 'positief' | 'neutraal' | 'negatief' = !correctTerrein
+      ? 'negatief'
+      : gunstigeBuren ? 'positief' : 'neutraal'
+    const tekst = !correctTerrein
+      ? `Negatief: ${naam} staat niet op geschikt terrein.`
+      : gunstigeBuren
+        ? `Positief: ${naam} staat goed en heeft een gunstige omgeving.`
+        : `Nog geen positief planteffect: plaats een passende buurplant dichtbij.`
+
+    return [plaatsing.id, { status, tekst }]
+  })),
+)
 
 function itemId(plaatsing: VoedselbosPlaatsing) {
   return plaatsing.item.id ?? plaatsing.item.naam
+}
+
+function plantNaam(item: { id?: string; naam: string }) {
+  if (actiefLevel.value.nummer === 1 && item.id === 'elstarboom') {
+    return 'Walnootboom'
+  }
+
+  return planten.find((plant) => plant.id === item.id)?.naam ?? item.naam
 }
 
 function vakjeTerrein(index: number) {
@@ -75,8 +272,8 @@ function plaatsingenVan(...ids: string[]) {
 
 function coordinaten(index: number) {
   return {
-    kolom: index % rasterKolommen,
-    rij: Math.floor(index / rasterKolommen),
+    kolom: index % rasterKolommen.value,
+    rij: Math.floor(index / rasterKolommen.value),
   }
 }
 
@@ -129,6 +326,14 @@ function voldoetAanNabijheid(plaatsing: VoedselbosPlaatsing) {
     return plaatsingenVan('walnootboom', 'hazelaar', 'wilde_appels').some((bron) => staatInInvloedszone(plaatsing, bron))
   }
 
+  if (id === 'witte_klaver') {
+    return plaatsingenVan('elstarboom').some((bron) => staatInInvloedszone(plaatsing, bron))
+  }
+
+  if (id === 'bosaardbei') {
+    return plaatsingenVan('vlier').some((ander) => zijnAangrenzend(plaatsing, ander))
+  }
+
   if (id === 'vlier') {
     return plaatsingenVan('wilde_aardbeien').some((ander) => zijnAangrenzend(plaatsing, ander))
   }
@@ -156,36 +361,27 @@ function berekenBasisPunten(plaatsing: VoedselbosPlaatsing) {
   return voldoetAanNabijheid(plaatsing) ? 2 : 1
 }
 
-const optimalePlaatsing = [
-  ['walnootboom', 1, 1, 3, 3],
-  ['hazelaar', 5, 1, 2, 2], ['hazelaar', 7, 1, 2, 2],
-  ['wilde_appels', 2, 6, 2, 2], ['wilde_appels', 5, 8, 2, 2],
-  ['vlier', 1, 9, 2, 1], ['vlier', 2, 9, 2, 1], ['vlier', 3, 10, 2, 1],
-  ['daslook', 1, 5, 1, 1], ['daslook', 1, 6, 1, 1], ['daslook', 2, 4, 1, 1],
-  ['daslook', 3, 4, 1, 1], ['daslook', 4, 2, 1, 1],
-  ['wilde_aardbeien', 1, 8, 1, 1], ['wilde_aardbeien', 2, 8, 1, 1],
-  ['wilde_aardbeien', 2, 11, 1, 1], ['wilde_aardbeien', 3, 8, 1, 1],
-  ['wilde_aardbeien', 4, 10, 1, 1], ['wilde_aardbeien', 4, 11, 1, 1],
-  ['wilde_knoflook', 4, 6, 1, 1], ['wilde_knoflook', 4, 7, 1, 1],
-  ['wilde_knoflook', 5, 5, 1, 1], ['wilde_knoflook', 6, 4, 1, 1],
-  ['wilde_knoflook', 6, 6, 1, 1],
-  ['brandnetel', 5, 6, 1, 1], ['brandnetel', 5, 7, 1, 1], ['brandnetel', 6, 5, 1, 1],
-  ['brandnetel', 6, 7, 1, 1], ['brandnetel', 7, 4, 1, 1],
-] as const
+function berekenPlaatsingOpbrengst(plaatsing: VoedselbosPlaatsing) {
+  const opbrengst = plaatsing.item.opbrengst
+  if (!opbrengst) return 0
+  if (!heeftCorrectTerrein(plaatsing)) return opbrengst.minimum
+  if (voldoetAanNabijheid(plaatsing)) return opbrengst.maximum
+  return Math.round(((opbrengst.minimum + opbrengst.maximum) / 2) * 10) / 10
+}
 
 function plaatsingHandtekening(id: string, indices: number[]) {
   return `${id}:${[...indices].sort((a, b) => a - b).join(',')}`
 }
 
 function isOptimalePlaatsing(huidigePlaatsingen: VoedselbosPlaatsing[]) {
-  const verwacht = optimalePlaatsing.map(([id, rij, kolom, breedte, hoogte]) => {
+  const verwacht = actiefLevel.value.optimalePlaatsing.map(({ plantId, rij, kolom, breedte, hoogte }) => {
     const indices: number[] = []
     for (let rijOffset = 0; rijOffset < hoogte; rijOffset += 1) {
       for (let kolomOffset = 0; kolomOffset < breedte; kolomOffset += 1) {
-        indices.push((rij - 1 + rijOffset) * rasterKolommen + kolom - 1 + kolomOffset)
+        indices.push((rij - 1 + rijOffset) * rasterKolommen.value + kolom - 1 + kolomOffset)
       }
     }
-    return plaatsingHandtekening(id, indices)
+    return plaatsingHandtekening(plantId, indices)
   }).sort()
   const werkelijk = huidigePlaatsingen
     .map((plaatsing) => plaatsingHandtekening(itemId(plaatsing), plaatsing.vakjes))
@@ -196,11 +392,13 @@ function isOptimalePlaatsing(huidigePlaatsingen: VoedselbosPlaatsing[]) {
 
 function berekenLevelDrieScore(huidigePlaatsingen: VoedselbosPlaatsing[]) {
   const gebruiktOptimalePlaatsing = isOptimalePlaatsing(huidigePlaatsingen)
-  const basisPunten = gebruiktOptimalePlaatsing
+  const basisPunten = gebruiktOptimalePlaatsing && actiefLevel.value.nummer === 3
     ? 58
     : huidigePlaatsingen.reduce((totaal, plaatsing) => totaal + berekenBasisPunten(plaatsing), 0)
-  const comboStatus = levelDrieCombos.map((combo) => {
+  const comboStatus = actiefLevel.value.combos.map((combo) => {
     const actief =
+      (combo.id === 'bestuiverscombo' && invloedszoneCombo('witte_klaver', ['elstarboom'])) ||
+      (combo.id === 'oevercombo' && aangrenzendOpTerrein('vlier', 'bosaardbei', 'oever')) ||
       (combo.id === 'lagencombo' && invloedszoneCombo('daslook', ['walnootboom', 'hazelaar'])) ||
       (combo.id === 'beekdalcombo' && aangrenzendOpTerrein('vlier', 'wilde_aardbeien', 'oever')) ||
       (combo.id === 'bosrandcombo' && invloedszoneCombo('daslook', ['wilde_appels'])) ||
@@ -213,7 +411,18 @@ function berekenLevelDrieScore(huidigePlaatsingen: VoedselbosPlaatsing[]) {
   })
   const comboPunten = comboStatus.reduce((totaal, combo) => totaal + (combo.actief ? combo.bonus : 0), 0)
   const ruweScore = basisPunten + comboPunten
-  const percentage = Math.round((ruweScore / 72) * 100)
+  const percentage = Math.round((ruweScore / actiefLevel.value.maximaleScore) * 100)
+  const opbrengst = Math.round(
+    huidigePlaatsingen.reduce((totaal, plaatsing) => totaal + berekenPlaatsingOpbrengst(plaatsing), 0) * 10,
+  ) / 10
+  const minimaleOpbrengst = Math.round(actieveItems.value.reduce(
+    (totaal, item) => totaal + (item.aantal ?? 1) * (item.opbrengst?.minimum ?? 0),
+    0,
+  ) * 10) / 10
+  const maximaleOpbrengst = Math.round(actieveItems.value.reduce(
+    (totaal, item) => totaal + (item.aantal ?? 1) * (item.opbrengst?.maximum ?? 0),
+    0,
+  ) * 10) / 10
 
   return {
     basisPunten,
@@ -221,17 +430,110 @@ function berekenLevelDrieScore(huidigePlaatsingen: VoedselbosPlaatsing[]) {
     combos: comboStatus,
     percentage,
     ruweScore,
+    opbrengst,
+    minimaleOpbrengst,
+    maximaleOpbrengst,
   }
 }
 
+function plaatsItemMetTutorial(index: number) {
+  if (isLevelEen.value && tutorialStap.value >= 0) {
+    if (tutorialStap.value < 4 || tutorialStap.value === 5) {
+      return
+    }
+
+    if (tutorialStap.value === 4 && (geselecteerdItem.value.id ?? '') !== 'elstarboom') {
+      return
+    }
+  }
+
+  const aantalVoor = plaatsingen.value.length
+  plaatsItem(index)
+
+  if (isLevelEen.value && tutorialStap.value === 4 && plaatsingen.value.length > aantalVoor) {
+    tutorialStap.value = 5
+    const klaver = actieveItems.value.find((item) => item.id === 'witte_klaver')
+    if (klaver) geselecteerdItem.value = klaver
+  }
+}
+
+function laatItemLosMetTutorial(index: number) {
+  if (isLevelEen.value && tutorialStap.value >= 0) {
+    if (tutorialStap.value < 4 || tutorialStap.value === 5) {
+      return
+    }
+
+    if (tutorialStap.value === 4 && (geselecteerdItem.value.id ?? '') !== 'elstarboom') {
+      return
+    }
+  }
+
+  const aantalVoor = plaatsingen.value.length
+  laatItemLos(index)
+
+  if (isLevelEen.value && tutorialStap.value === 4 && plaatsingen.value.length > aantalVoor) {
+    tutorialStap.value = 5
+    const klaver = actieveItems.value.find((item) => item.id === 'witte_klaver')
+    if (klaver) geselecteerdItem.value = klaver
+  }
+}
+
+function volgendeTutorialStap() {
+  if (!isLevelEen.value || tutorialStap.value < 0) {
+    return
+  }
+
+  if (tutorialStap.value === 8) {
+    tutorialStap.value = -1
+    return
+  }
+
+  if (tutorialStap.value !== 4) {
+    tutorialStap.value += 1
+  }
+}
+
+function skipTutorial() {
+  tutorialStap.value = -1
+}
+
+watch(scoreResultaat, (resultaat) => {
+  if (!isLevelEen.value || tutorialComboGetoond.value || tutorialStap.value < 6) {
+    return
+  }
+
+  if (resultaat.combos.some((combo) => combo.id === 'bestuiverscombo' && combo.actief)) {
+    tutorialComboGetoond.value = true
+    tutorialStap.value = 7
+  }
+})
+
 function openLevel(level: number) {
-  if (level < 1 || level > aantalLevels) {
+  const configuratie = levels.find((item) => item.nummer === level)
+  if (!configuratie) {
     return
   }
 
   gekozenLevel.value = level
+  geselecteerdItem.value = actieveItems.value[0] ?? standaardVoedselbosItem
   resetBord()
-  huidigScherm.value = level === 3 ? 'levelUitleg' : 'spel'
+  tutorialStap.value = configuratie.nummer === 1 ? 0 : -1
+  tutorialComboGetoond.value = false
+  huidigScherm.value = configuratie.heeftUitleg ? 'levelUitleg' : 'spel'
+}
+
+function openPlantenInfo(vanaf: SpelScherm, plantId?: string) {
+  vorigSchermVoorPlanten.value = vanaf
+  informatiePlantId.value = plantId
+  huidigScherm.value = 'plantenInfo'
+}
+
+function openAllePlantenVanuitLevelKeuze() {
+  openPlantenInfo('levelKeuze')
+}
+
+function sluitPlantenInfo() {
+  huidigScherm.value = vorigSchermVoorPlanten.value
 }
 
 function rondLevelAf() {
@@ -245,15 +547,19 @@ function rondLevelAf() {
 
 function speelLevelOpnieuw() {
   resetBord()
+  tutorialStap.value = gekozenLevel.value === 1 ? 0 : -1
+  tutorialComboGetoond.value = false
   huidigScherm.value = 'spel'
 }
 
 function openVolgendLevel() {
-  if (gekozenLevel.value >= aantalLevels) {
+  const huidigIndex = levels.findIndex((level) => level.nummer === gekozenLevel.value)
+  const volgendLevel = levels[huidigIndex + 1]
+  if (!volgendLevel) {
     return
   }
 
-  openLevel(gekozenLevel.value + 1)
+  openLevel(volgendLevel.nummer)
 }
 </script>
 
@@ -270,29 +576,44 @@ function openVolgendLevel() {
 
   <LevelKeuzeScherm
     v-else-if="huidigScherm === 'levelKeuze'"
-    :aantal-levels="aantalLevels"
+    :levels="levels"
     :hoogste-voltooide-level="hoogsteVoltooideLevel"
     @open-gerechten="huidigScherm = 'gerechten'"
     @open-level="openLevel"
+    @open-planten="openAllePlantenVanuitLevelKeuze"
     @terug="huidigScherm = 'start'"
   />
 
   <GerechtenScherm
     v-else-if="huidigScherm === 'gerechten'"
     :gerechten="gerechten"
-    @terug="huidigScherm = 'levelKeuze'"
+    :hoogste-voltooide-level="hoogsteVoltooideLevel"
+    @levels="huidigScherm = 'levelKeuze'"
+    @open-planten="openPlantenInfo('gerechten')"
+  />
+
+  <AllePlantenScherm
+    v-else-if="huidigScherm === 'plantenInfo'"
+    :plant-ids="vorigSchermVoorPlanten === 'spel' ? actiefLevel.plantIds : undefined"
+    :start-plant-id="informatiePlantId"
+    :terug-naar-level="vorigSchermVoorPlanten === 'spel'"
+    @levels="huidigScherm = 'levelKeuze'"
+    @open-gerechten="huidigScherm = 'gerechten'"
+    @sluiten="sluitPlantenInfo"
   />
 
   <LevelDrieUitlegScherm
     v-else-if="huidigScherm === 'levelUitleg'"
+    :level="actiefLevel"
     @start="huidigScherm = 'spel'"
     @terug="huidigScherm = 'levelKeuze'"
   />
 
   <LevelEindeScherm
     v-else-if="huidigScherm === 'einde'"
-    :aantal-levels="aantalLevels"
     :level="gekozenLevel"
+    :level-config="actiefLevel"
+    :terrein-kaart="actiefLevel.terreinKaart"
     :score-resultaat="scoreResultaat"
     @levels="huidigScherm = 'start'"
     @opnieuw="speelLevelOpnieuw"
@@ -301,9 +622,12 @@ function openVolgendLevel() {
 
   <main v-else class="spel">
     <header class="spel-kop">
-      <button type="button" class="logo-knop" aria-label="Terug naar levels" @click="huidigScherm = 'levelKeuze'">
-        <img :src="studiestapLogo" alt="Studie-Stap" />
-      </button>
+      <div class="kop-links">
+        <button type="button" class="logo-knop" aria-label="Terug naar levels" @click="huidigScherm = 'levelKeuze'">
+          <img :src="studiestapLogo" alt="Studie-Stap" />
+        </button>
+        <button type="button" class="terug-knop" @click="huidigScherm = 'levelKeuze'">← Terug</button>
+      </div>
 
       <button type="button" class="level-label">Level {{ gekozenLevel }}</button>
 
@@ -316,36 +640,60 @@ function openVolgendLevel() {
           <span>Vakjes vrij</span>
           <strong>{{ vrijeVakjes }}</strong>
         </div>
+        <div>
+          <span>Opbrengst</span>
+          <strong>{{ totaleOpbrengst }} kg</strong>
+        </div>
       </div>
 
-      <ul class="legenda" aria-label="Terrein legenda">
-        <li v-for="terrein in terreinen" :key="terrein.naam">
+      <ul
+        class="legenda"
+        :class="{ 'tutorial-highlight': isLevelEen && tutorialStap === 1 }"
+        aria-label="Terrein legenda"
+      >
+        <li v-for="terrein in terreinen" :key="terrein.id">
           <span :style="{ backgroundColor: terrein.kleur }"></span>{{ terrein.naam }}
         </li>
       </ul>
 
       <nav class="spel-tabs" aria-label="Spel tabbladen">
-        <button type="button" @click="huidigScherm = gekozenLevel === 3 ? 'levelUitleg' : 'levelKeuze'">Uitleg</button>
-        <button type="button" class="actief">Planten</button>
+        <button type="button" @click="huidigScherm = actiefLevel.heeftUitleg ? 'levelUitleg' : 'levelKeuze'">Uitleg</button>
+        <button
+          type="button"
+          :class="{ 'tutorial-highlight': isLevelEen && tutorialStap === 3 }"
+          @click="openPlantenInfo('spel')"
+        >
+          Planten
+        </button>
       </nav>
     </header>
 
     <div class="spel-inhoud">
       <ItemPaneel
         :geselecteerd-item="geselecteerdItem"
-        :items="voedselbosItems"
+        :gemarkeerde-item-ids="gemarkeerdeItemIds"
+        :items="actieveItems"
+        :plaatsingen="plaatsingen"
+        :vergrendelde-item-ids="vergrendeldeItemIds"
+        @open-info="openPlantenInfo('spel', $event.id)"
         @selecteer="geselecteerdItem = $event"
         @start-slepen="startSlepen"
       />
 
       <VoedselbosBord
+        :effecten="plaatsingEffecten"
+        :geselecteerd-item="geselecteerdItem"
+        :gemarkeerde-plaatsing-ids="gemarkeerdePlaatsingIds"
+        :gemarkeerde-terreinen="gemarkeerdeTerreinen"
+        :gemarkeerde-vakjes="gemarkeerdeVakjes"
+        :geschikte-terreinen="geschikteTerreinen"
         :plaatsingen="plaatsingen"
         :raster-kolommen="rasterKolommen"
         :raster-rijen="rasterRijen"
         :vakjes="vakjes"
-        @laat-item-los="laatItemLos"
+        @laat-item-los="laatItemLosMetTutorial"
         @maak-vakje-leeg="maakVakjeLeeg"
-        @plaats-item="plaatsItem"
+        @plaats-item="plaatsItemMetTutorial"
       />
 
       <aside class="status-paneel">
@@ -363,12 +711,16 @@ function openVolgendLevel() {
             <img
               v-if="geselecteerdItem.afbeelding"
               :src="geselecteerdItem.afbeelding"
-              :alt="geselecteerdItem.naam"
+              :alt="plantNaam(geselecteerdItem)"
             />
             <span v-else class="plant-fallback">{{ geselecteerdItem.icoon }}</span>
-            <strong>{{ geselecteerdItem.naam }}</strong>
+            <strong>{{ plantNaam(geselecteerdItem) }}</strong>
             <small>Laag: {{ geselecteerdItem.laag ?? 'Plantlaag' }}</small>
             <span>{{ geselecteerdItem.terrein }}</span>
+            <span v-if="geselecteerdItem.opbrengst" class="opbrengst-regel">
+              {{ geselecteerdItem.opbrengst.minimum }}–{{ geselecteerdItem.opbrengst.maximum }}
+              {{ geselecteerdItem.opbrengst.eenheid }} opbrengst
+            </span>
           </div>
         </section>
 
@@ -383,13 +735,55 @@ function openVolgendLevel() {
         </button>
       </aside>
     </div>
+
+    <div
+      v-if="isLevelEen && tutorialInfo"
+      class="tutorial-laag"
+      :class="{ fullscreen: tutorialInfo.fullscreen, 'plaats-stap': tutorialStap === 4 }"
+    >
+      <div class="tutorial-scene">
+        <img
+          class="tutorial-mascotte"
+          :src="tutorialScarecrow"
+          alt=""
+          aria-hidden="true"
+        />
+        <article class="tutorial-kaart">
+          <small v-if="tutorialInfo.label">{{ tutorialInfo.label }}</small>
+          <h2>{{ tutorialInfo.titel }}</h2>
+          <p>{{ tutorialInfo.tekst }}</p>
+          <p v-if="tutorialInfo.extra">{{ tutorialInfo.extra }}</p>
+          <div v-if="tutorialStap === 1" class="tutorial-legenda">
+            <span><i class="grasland"></i>Grasland</span>
+            <span><i class="oever"></i>Oever</span>
+            <span><i class="water"></i>Water</span>
+          </div>
+          <div v-if="tutorialStap === 8" class="punten-schema">
+            <strong>Correct terrein + nabijheid voldaan = 2 punten</strong>
+            <strong>Alleen correct terrein = 1 punt</strong>
+            <strong>Fout terrein = 0 punten</strong>
+          </div>
+          <div class="tutorial-acties">
+            <button
+              v-if="tutorialInfo.knop"
+              type="button"
+              class="tutorial-volgende"
+              @click="volgendeTutorialStap"
+            >
+              {{ tutorialInfo.knop }}
+            </button>
+            <button type="button" class="tutorial-skip" @click="skipTutorial">Skip Tutorial</button>
+          </div>
+        </article>
+      </div>
+    </div>
   </main>
 </template>
 
 <style scoped>
 .spel {
   display: grid;
-  grid-template-rows: 66px minmax(0, 1fr);
+  grid-template-rows: 84px minmax(0, 1fr);
   min-height: 100vh;
   background: #061708;
   color: #dce9cf;
@@ -398,12 +792,19 @@ function openVolgendLevel() {
 
 .spel-kop {
   display: grid;
-  grid-template-columns: 180px 142px 170px 1fr 180px;
+  grid-template-columns: 230px 145px 290px 1fr 200px;
   align-items: center;
   gap: 20px;
   padding: 0 28px 0 22px;
   border-bottom: 1px solid #2d6c2b;
   background: #061708;
+}
+
+.kop-links {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 14px;
 }
 
 .logo-knop {
@@ -415,36 +816,56 @@ function openVolgendLevel() {
 
 .logo-knop img {
   display: block;
-  width: 78px;
+  width: 92px;
   height: auto;
+}
+
+.terug-knop {
+  min-width: 88px;
+  height: 36px;
+  border: 1px solid #2e6833;
+  border-radius: 7px;
+  background: #123417;
+  color: #86c978;
+  padding: 0 13px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.terug-knop:hover,
+.terug-knop:focus-visible {
+  border-color: #65bc4d;
+  background: #1a4820;
+  color: #e1f2d7;
 }
 
 .level-label,
 .spel-tabs button {
-  height: 30px;
-  border: 1px solid #285b24;
-  border-radius: 6px;
+  height: 46px;
+  border: 2px solid #285b24;
+  border-radius: 8px;
   background: #143910;
   color: #65bd48;
   font-weight: 700;
+  font-size: 14px;
 }
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(2, max-content);
-  gap: 26px;
+  grid-template-columns: repeat(3, max-content);
+  gap: 24px;
 }
 
 .stats div {
   display: grid;
-  gap: 1px;
+  gap: 4px;
 }
 
 .stats span,
 .voortgang h2,
 .geselecteerd-kaart h2 {
   color: #315d31;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -452,7 +873,7 @@ function openVolgendLevel() {
 .stats strong {
   color: #e7ddaf;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 20px;
+  font-size: 27px;
   line-height: 1;
 }
 
@@ -460,32 +881,52 @@ function openVolgendLevel() {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 20px;
+  gap: 22px;
   padding: 0;
   list-style: none;
+}
+
+.legenda.tutorial-highlight {
+  border: 3px dashed #f2df73;
+  border-radius: 8px;
+  background: rgba(13, 49, 18, .96);
+  box-shadow: 0 0 0 4px rgba(242, 223, 115, .24), 0 0 26px rgba(242, 223, 115, .72);
+  padding: 10px 15px;
+  animation: tutorial-pulse 1.25s ease-in-out infinite;
 }
 
 .legenda li {
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: #4d704a;
-  font-size: 8px;
+  gap: 7px;
+  color: #71916e;
+  font-size: 10px;
+  font-weight: 600;
 }
 
 .legenda li span {
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgba(255, 255, 255, .25);
+  border-radius: 2px;
 }
 
 .spel-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 14px;
 }
 
 .spel-tabs button {
   color: #8bc66e;
+}
+
+.spel-tabs button.tutorial-highlight {
+  border-color: #f2df73;
+  background: #1d4d25;
+  box-shadow: 0 0 0 4px rgba(242, 223, 115, .22), 0 0 24px rgba(242, 223, 115, .62);
+  color: #f5e9a6;
+  animation: tutorial-pulse 1.25s ease-in-out infinite;
 }
 
 .spel-tabs .actief {
@@ -494,16 +935,16 @@ function openVolgendLevel() {
 
 .spel-inhoud {
   display: grid;
-  grid-template-columns: 220px minmax(520px, 1fr) 216px;
+  grid-template-columns: 270px minmax(520px, 1fr) 270px;
   min-height: 0;
 }
 
 .status-paneel {
   display: grid;
-  min-width: 216px;
+  min-width: 270px;
   align-content: start;
-  gap: 22px;
-  padding: 24px 18px;
+  gap: 26px;
+  padding: 28px 22px;
   border-left: 1px solid #21482a;
   background: #071f0d;
 }
@@ -511,20 +952,23 @@ function openVolgendLevel() {
 .voortgang {
   display: grid;
   justify-items: center;
-  gap: 18px;
-  min-height: 250px;
+  gap: 22px;
+  min-height: 285px;
 }
 
 .voortgang h2,
 .geselecteerd-kaart h2 {
   justify-self: start;
+  color: #71ad68;
+  font-size: 18px;
+  font-weight: 800;
 }
 
 .ring {
   --voortgang: 0deg;
   display: grid;
-  width: 112px;
-  height: 112px;
+  width: 150px;
+  height: 150px;
   place-items: center;
   border-radius: 50%;
   background:
@@ -535,14 +979,15 @@ function openVolgendLevel() {
 .ring strong {
   color: #e7ddaf;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 24px;
+  font-size: 40px;
   line-height: 1;
 }
 
 .ring span {
   margin-top: 26px;
-  color: #3d6639;
-  font-size: 8px;
+  color: #6f996b;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .geselecteerd-kaart,
@@ -636,9 +1081,237 @@ function openVolgendLevel() {
   opacity: 0.45;
 }
 
+.tutorial-laag {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 7, 4, .24);
+  pointer-events: none;
+}
+
+.tutorial-laag.fullscreen {
+  background: rgba(2, 7, 4, .68);
+}
+
+.tutorial-laag.plaats-stap {
+  place-items: end center;
+  background: rgba(2, 7, 4, .14);
+  padding: 0 292px 24px 220px;
+}
+
+@keyframes tutorial-pulse {
+  0%, 100% {
+    filter: brightness(1);
+  }
+
+  50% {
+    filter: brightness(1.18);
+  }
+}
+
+.tutorial-scene {
+  display: grid;
+  grid-template-columns: minmax(180px, 260px) minmax(0, 520px);
+  align-items: end;
+  gap: 0;
+  pointer-events: none;
+}
+
+.tutorial-laag.fullscreen .tutorial-scene {
+  grid-template-columns: minmax(190px, 280px) minmax(0, 520px);
+  transform: translateX(-2vw);
+}
+
+.tutorial-laag.plaats-stap .tutorial-scene {
+  grid-template-columns: 124px minmax(0, 360px);
+  justify-self: end;
+  align-items: end;
+}
+
+.tutorial-kaart {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: min(520px, calc(100vw - 36px));
+  gap: 18px;
+  border-radius: 10px;
+  background: #133d1a;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, .34);
+  color: #e9e1bd;
+  padding: 42px 38px 34px;
+  pointer-events: auto;
+}
+
+.tutorial-kaart::before {
+  position: absolute;
+  left: -42px;
+  bottom: 58px;
+  width: 56px;
+  height: 38px;
+  background: #133d1a;
+  clip-path: polygon(100% 0, 0 58%, 100% 100%);
+  content: '';
+  filter: drop-shadow(-6px 8px 7px rgba(0, 0, 0, .2));
+}
+
+.tutorial-laag:not(.fullscreen) .tutorial-kaart {
+  transform: translateY(-6vh);
+}
+
+.tutorial-laag.plaats-stap .tutorial-kaart {
+  width: min(360px, calc(100vw - 36px));
+  gap: 12px;
+  margin-left: 0;
+  padding: 22px 24px;
+  transform: none;
+}
+
+.tutorial-laag.plaats-stap .tutorial-kaart::before {
+  left: -28px;
+  bottom: 32px;
+  width: 36px;
+  height: 25px;
+}
+
+.tutorial-laag.plaats-stap .tutorial-kaart h2 {
+  font-size: 21px;
+}
+
+.tutorial-laag.plaats-stap .tutorial-kaart p {
+  font-size: 13px;
+}
+
+.tutorial-laag.plaats-stap .tutorial-acties {
+  grid-template-columns: 1fr;
+  margin-top: 4px;
+}
+
+.tutorial-laag.plaats-stap .tutorial-acties button {
+  min-height: 42px;
+}
+
+.tutorial-kaart small {
+  color: #e8d188;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.tutorial-kaart h2 {
+  max-width: 460px;
+  color: #eee3c1;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(23px, 2.4vw, 30px);
+  line-height: 1.12;
+}
+
+.tutorial-kaart p {
+  max-width: 430px;
+  color: #85a882;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.tutorial-acties {
+  display: grid;
+  grid-template-columns: minmax(0, 200px) minmax(0, 200px);
+  gap: 18px;
+  margin-top: 16px;
+}
+
+.tutorial-acties button {
+  min-height: 54px;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.tutorial-volgende {
+  border: 0;
+  background: #dda915;
+  color: #201b05;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 18px;
+}
+
+.tutorial-skip {
+  border: 1px solid #2f6632;
+  background: transparent;
+  color: #74bd59;
+}
+
+.tutorial-mascotte {
+  z-index: 1;
+  justify-self: end;
+  width: min(260px, 24vw);
+  max-height: 54vh;
+  object-fit: contain;
+  object-position: bottom;
+  pointer-events: none;
+  transform: translate(28px, 16px);
+}
+
+.tutorial-laag.fullscreen .tutorial-mascotte {
+  width: min(280px, 25vw);
+}
+
+.tutorial-laag.plaats-stap .tutorial-mascotte {
+  width: 150px;
+  max-height: 26vh;
+  transform: translate(18px, 16px);
+}
+
+.tutorial-legenda,
+.punten-schema {
+  display: grid;
+  gap: 9px;
+  border: 1px solid #2f6533;
+  border-radius: 8px;
+  background: #0d2c13;
+  padding: 12px 14px;
+}
+
+.tutorial-legenda {
+  grid-template-columns: repeat(3, max-content);
+}
+
+.tutorial-legenda span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #cbd6b8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tutorial-legenda i {
+  width: 13px;
+  height: 13px;
+  border-radius: 2px;
+}
+
+.tutorial-legenda .grasland {
+  background: #79cf7c;
+}
+
+.tutorial-legenda .oever {
+  background: #d5e78a;
+}
+
+.tutorial-legenda .water {
+  background: #45a8d1;
+}
+
+.punten-schema strong {
+  color: #eee3c1;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 16px;
+  line-height: 1.25;
+}
+
 @media (max-width: 1000px) {
   .spel-kop {
-    grid-template-columns: 100px 120px 1fr;
+    grid-template-columns: minmax(170px, 1fr) 120px 1fr;
     height: auto;
     gap: 12px;
     padding: 12px;
@@ -650,7 +1323,7 @@ function openVolgendLevel() {
   }
 
   .spel-inhoud {
-    grid-template-columns: 220px minmax(460px, 1fr);
+    grid-template-columns: 270px minmax(460px, 1fr);
   }
 
   .status-paneel {
@@ -666,6 +1339,33 @@ function openVolgendLevel() {
   .klaar-knop {
     margin-top: 0;
   }
+
+  .tutorial-mascotte {
+    width: 180px;
+  }
+
+  .tutorial-laag.plaats-stap {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .tutorial-scene,
+  .tutorial-laag.fullscreen .tutorial-scene {
+    grid-template-columns: minmax(110px, 170px) minmax(0, 1fr);
+    width: calc(100vw - 28px);
+    transform: none;
+  }
+
+  .tutorial-laag.plaats-stap .tutorial-scene {
+    grid-template-columns: 98px minmax(0, 1fr);
+    width: min(520px, calc(100vw - 36px));
+  }
+
+  .tutorial-kaart::before {
+    left: -28px;
+    width: 38px;
+    height: 28px;
+  }
 }
 
 @media (max-width: 700px) {
@@ -678,6 +1378,43 @@ function openVolgendLevel() {
   }
 
   .status-paneel {
+    grid-template-columns: 1fr;
+  }
+
+  .tutorial-laag:not(.fullscreen) .tutorial-kaart {
+    margin-left: 0;
+  }
+
+  .tutorial-scene,
+  .tutorial-laag.fullscreen .tutorial-scene,
+  .tutorial-laag.plaats-stap .tutorial-scene {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .tutorial-mascotte {
+    display: block;
+    width: 150px;
+    max-height: 24vh;
+    transform: translateY(22px);
+  }
+
+  .tutorial-laag.plaats-stap .tutorial-mascotte {
+    width: 118px;
+    transform: translateY(18px);
+  }
+
+  .tutorial-kaart::before {
+    left: 46%;
+    bottom: auto;
+    top: -30px;
+    width: 42px;
+    height: 36px;
+    clip-path: polygon(50% 0, 0 100%, 100% 100%);
+  }
+
+  .tutorial-acties,
+  .tutorial-legenda {
     grid-template-columns: 1fr;
   }
 }

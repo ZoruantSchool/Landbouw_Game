@@ -10,26 +10,26 @@ const leerwegen = [
   {
     beschrijving: 'Agroforestry en voedselbossen',
     kleur: 'groen',
-    tekst: 'Werk samen met natuurlijke processen en geef biodiversiteit de ruimte.',
+    tekst: 'Planten beschermen elkaar. Wortels, schaduw en bloemen — elk heeft een rol in het systeem.',
     titel: 'Samen met de natuur',
   },
   {
-    beschrijving: 'Grote akkers en mechanisatie',
+    beschrijving: 'Grasland, akker, oever en schaduw',
     kleur: 'geel',
-    tekst: 'Ontdek hoe schaal en efficiëntie de opbrengst van landbouw beïnvloeden.',
-    titel: 'Maximale efficiëntie',
+    tekst: 'Elke plant heeft zijn plek. Zet je hem op het verkeerde terrein? Dan loopt het mis.',
+    titel: 'terrein bepaalt alles',
   },
   {
-    beschrijving: 'Compost en reststromen',
+    beschrijving: 'Compost & reststromen',
     kleur: 'bruin',
-    tekst: 'Gebruik materialen opnieuw en maak de kringloop op het land compleet.',
-    titel: 'Kringloop in landbouw',
+    tekst: 'Knoflook naast brandnetel. Daslook onder een boom. De juiste buren versterken elkaar.',
+    titel: 'Combinaties geven kracht',
   },
   {
-    beschrijving: 'Kweekvlees en vertical farming',
+    beschrijving: 'Gerecht & ecosysteem',
     kleur: 'blauw',
-    tekst: 'Onderzoek nieuwe technieken voor het voedselbos van de toekomst.',
-    titel: 'Landbouwinnovatie',
+    tekst: 'Hoe beter je plaatst, hoe rijker het gerecht dat je kunt koken aan het einde.',
+    titel: 'Jij beheert de oogst',
   },
 ]
 </script>
@@ -47,10 +47,10 @@ const leerwegen = [
     <section class="introductie-inhoud">
       <div class="introductie-titel">
         <p>Wat leer je in deze game?</p>
-        <h1>Vier wegen naar <strong>duurzame landbouw</strong></h1>
+        <h1>Jij bouwt een voedselbos <strong>Van de grond af aan</strong></h1>
         <span>
-          Ontdek hoe verschillende landbouwvormen invloed hebben op natuur, voedsel en de
-          toekomst van het landschap.
+          Jij maakt de keuzes. Welke planten plant je waar? Wie helpt wie? Elke plaatsing telt
+          — voor de natuur, de opbrengst en de kringloop.
         </span>
       </div>
 
@@ -70,12 +70,11 @@ const leerwegen = [
       <div class="game-uitleg">
         <h2>In de game</h2>
         <p>
-          Kies de juiste strategie voor ieder stuk land en ontdek de gevolgen voor natuur,
-          economie en voedsel.
+          Plaats planten op een grid van heuvel, akker, oever en water. Activeer combo's voor
+          bonuspunten en kook aan het einde een gerecht met wat je hebt geoogst.
         </p>
       </div>
 
-      <p class="doelgroep">Doelgroep: havo/vwo bovenbouw · Vak: Biologie — Ecologie & Milieu</p>
       <button type="button" class="begin-knop" @click="$emit('begin')">Begin →</button>
     </section>
   </main>

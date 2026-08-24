@@ -1,5 +1,5 @@
-import { computed, ref } from 'vue'
-import { levelDrieTerreinKaart } from '../data/voedselbosData'
+import { computed, ref, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 import type { TerreinSoort, VoedselbosItem } from '../types/spel'
 
 type BordCel = {
@@ -10,22 +10,26 @@ type BordCel = {
 
 type BordOpties = {
   standaardItem: VoedselbosItem
+  terreinKaart: MaybeRefOrGetter<TerreinSoort[][]>
   rasterKolommen?: number
   rasterRijen?: number
 }
 
 export function useVoedselbosBord({
   standaardItem,
-  rasterKolommen = 12,
-  rasterRijen = 10,
+  terreinKaart,
+  rasterKolommen,
+  rasterRijen,
 }: BordOpties) {
+  const kolommen = computed(() => rasterKolommen ?? toValue(terreinKaart)[0]?.length ?? 12)
+  const rijen = computed(() => rasterRijen ?? toValue(terreinKaart).length ?? 10)
   const geselecteerdItem = ref(standaardItem)
   const gesleeptItem = ref<VoedselbosItem | null>(null)
   const volgendePlaatsingId = ref(1)
   const cellen = ref<BordCel[]>(maakLegeCellen())
 
   function maakLegeCellen() {
-    return Array.from({ length: rasterKolommen * rasterRijen }, () => ({
+    return Array.from({ length: kolommen.value * rijen.value }, () => ({
       anker: false,
       item: null,
       plaatsingId: null,
@@ -33,20 +37,20 @@ export function useVoedselbosBord({
   }
 
   function bepaalTerrein(rij: number, kolom: number): TerreinSoort {
-    return (levelDrieTerreinKaart[rij]?.[kolom] ?? 'grasland') as TerreinSoort
+    return toValue(terreinKaart)[rij]?.[kolom] ?? 'grasland'
   }
 
   function bepaalFootprintVakjes(index: number, item: VoedselbosItem) {
     const breedte = item.footprint?.breedte ?? 1
     const hoogte = item.footprint?.hoogte ?? 1
-    const klikRij = Math.floor(index / rasterKolommen)
-    const klikKolom = index % rasterKolommen
+    const klikRij = Math.floor(index / kolommen.value)
+    const klikKolom = index % kolommen.value
     const gebruiktMiddenAlsAnker = item.id === 'walnootboom'
     const startRij = gebruiktMiddenAlsAnker ? klikRij - Math.floor(hoogte / 2) : klikRij
     const startKolom = gebruiktMiddenAlsAnker ? klikKolom - Math.floor(breedte / 2) : klikKolom
     const vakjes: number[] = []
 
-    if (startKolom < 0 || startRij < 0 || startKolom + breedte > rasterKolommen || startRij + hoogte > rasterRijen) {
+    if (startKolom < 0 || startRij < 0 || startKolom + breedte > kolommen.value || startRij + hoogte > rijen.value) {
       return []
     }
 
@@ -54,7 +58,7 @@ export function useVoedselbosBord({
       for (let kolomOffset = 0; kolomOffset < breedte; kolomOffset += 1) {
         const rij = startRij + rijOffset
         const kolom = startKolom + kolomOffset
-        const vakjeIndex = rij * rasterKolommen + kolom
+        const vakjeIndex = rij * kolommen.value + kolom
 
         if (bepaalTerrein(rij, kolom) === 'water' || cellen.value[vakjeIndex]?.item) {
           return []
@@ -69,8 +73,8 @@ export function useVoedselbosBord({
 
   const vakjes = computed(() =>
     cellen.value.map((cel, index) => {
-      const rij = Math.floor(index / rasterKolommen)
-      const kolom = index % rasterKolommen
+      const rij = Math.floor(index / kolommen.value)
+      const kolom = index % kolommen.value
 
       return {
         anker: cel.anker,
@@ -180,12 +184,13 @@ export function useVoedselbosBord({
 
   return {
     geselecteerdItem,
+    geplaatsteAantallen,
     laatItemLos,
     maakVakjeLeeg,
     plaatsItem,
     plaatsingen,
-    rasterKolommen,
-    rasterRijen,
+    rasterKolommen: kolommen,
+    rasterRijen: rijen,
     resetBord,
     startSlepen,
     vakjes,

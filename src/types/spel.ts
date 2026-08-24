@@ -11,6 +11,11 @@ export type VoedselbosItem = {
   id?: string
   laag?: string
   naam: string
+  opbrengst?: {
+    minimum: number
+    maximum: number
+    eenheid: string
+  }
   terrein: string
   tip?: string
 }
@@ -20,6 +25,7 @@ export type SpelScherm =
   | 'introductie'
   | 'levelKeuze'
   | 'levelUitleg'
+  | 'plantenInfo'
   | 'gerechten'
   | 'spel'
   | 'einde'

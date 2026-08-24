@@ -1,20 +1,52 @@
 <script setup lang="ts">
-import levelDrieGerecht from '../../../assets/level-3-walnoot-hazelnootpasta.png'
+import { computed } from 'vue'
+import levelEenUitlegBeeld from '../../../assets/level-1-appeltaart-uitleg.png'
 import studiestapLogo from '../../../assets/studiestap-logo.svg'
+import type { LevelConfig } from '../../../data/levels/types'
+
+const props = defineProps<{
+  level: LevelConfig
+}>()
 
 defineEmits<{
   start: []
   terug: []
 }>()
 
-const terreintypes = [
-  { kleur: '#79cf7c', naam: 'Grasland' },
-  { kleur: '#d4d0ba', naam: 'Heuvel' },
-  { kleur: '#d5e78a', naam: 'Oever' },
-  { kleur: '#45a8d1', naam: 'Water' },
-  { kleur: '#526a36', naam: 'Schaduw' },
-  { kleur: '#bc8c5c', naam: 'Akker' },
-]
+const terreinKleuren = {
+  grasland: '#79cf7c',
+  heuvel: '#d4d0ba',
+  oever: '#d5e78a',
+  water: '#45a8d1',
+  schaduw: '#526a36',
+  akker: '#bc8c5c',
+}
+
+const terreinNamen = {
+  grasland: 'Grasland',
+  heuvel: 'Heuvel',
+  oever: 'Oever',
+  water: 'Water - niet speelbaar',
+  schaduw: 'Schaduw',
+  akker: 'Akker',
+}
+
+const terreintypes = computed(() =>
+  [...new Set(props.level.terreinKaart.flat())].map((terrein) => ({
+    kleur: terreinKleuren[terrein],
+    naam: terreinNamen[terrein],
+  })),
+)
+
+const uitleg = computed(() => props.level.uitleg ?? {
+  titel: props.level.titel,
+  subtitel: 'Welk gewas past waar?',
+  tekst: 'In dit level bouw je een voedselbos dat uit meerdere lagen bestaat. Kies slim waar je elk gewas plaatst en zorg voor sterke combinaties.',
+  uitlegTekst: 'Let niet alleen op het terrein, maar ook op de ruimte en op welke planten elkaar versterken.',
+  knopTekst: `Start level ${props.level.nummer}`,
+})
+
+const beeld = computed(() => props.level.nummer === 1 ? levelEenUitlegBeeld : props.level.afbeelding)
 </script>
 
 <template>
@@ -27,16 +59,12 @@ const terreintypes = [
     <section class="uitleg-inhoud">
       <div class="tekst-kolom">
         <div class="intro">
-          <small>Level 3</small>
-          <h1>Walnoot-Hazelnootpasta</h1>
-          <p class="subtitel">met wilde kruiden en bessencompote</p>
+          <small>Level {{ level.nummer }}</small>
+          <h1>{{ uitleg.titel }}</h1>
 
-          <h2>Welk gewas past waar?</h2>
+          <h2>{{ uitleg.subtitel }}</h2>
           <p class="beschrijving">
-            In dit level bouw je een voedselbos dat uit meerdere lagen bestaat. Bomen, struiken
-            en kruiden werken samen, maar nemen ook ruimte in en beïnvloeden elkaar. Kies slim
-            waar je elk gewas plaatst en zorg voor een sterke balans tussen biodiversiteit, bodem
-            en opbrengst.
+            {{ uitleg.tekst }}
           </p>
         </div>
 
@@ -52,20 +80,17 @@ const terreintypes = [
         <aside class="uitleg-kaart">
           <h3>Uitleg</h3>
           <p>
-            In level 3 draait alles om samenwerken in lagen. Grote bomen nemen meerdere vakjes
-            in, geven schaduw en beïnvloeden de planten om hen heen. Struiken en kruiden kunnen
-            daar juist van profiteren, zolang je ze op de juiste plek zet. Let dus niet alleen op
-            het terrein, maar ook op de ruimte en op welke planten elkaar versterken.
+            {{ uitleg.uitlegTekst }}
           </p>
         </aside>
 
-        <button type="button" class="start-knop" @click="$emit('start')">Start level 3</button>
+        <button type="button" class="start-knop" @click="$emit('start')">{{ uitleg.knopTekst }}</button>
       </div>
 
       <div class="beeld-kolom">
         <img
-          :src="levelDrieGerecht"
-          alt="Hazelnootpasta, bessencompote, brood, kruiden en bessen in een zonnig bos"
+          :src="beeld"
+          :alt="`Illustratie voor level ${level.nummer}: ${level.titel}`"
         />
       </div>
     </section>
@@ -97,7 +122,8 @@ const terreintypes = [
   border: 0;
   background: transparent;
   color: #4f6c54;
-  font-size: 13px;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .uitleg-kop button:hover {
@@ -106,7 +132,7 @@ const terreintypes = [
 
 .uitleg-inhoud {
   display: grid;
-  grid-template-columns: minmax(390px, 40%) 1fr;
+  grid-template-columns: minmax(460px, 45%) 1fr;
   height: calc(100dvh - 64px);
 }
 
@@ -120,7 +146,7 @@ const terreintypes = [
 
 .intro small {
   color: #67bd4c;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -136,27 +162,28 @@ const terreintypes = [
 .intro h1 {
   margin-top: 12px;
   color: #eee3c1;
-  font-size: clamp(28px, 2.7vw, 42px);
+  font-size: clamp(34px, 3vw, 48px);
   line-height: 1;
 }
 
 .subtitel {
   color: #eee3c1;
-  font-size: clamp(18px, 1.7vw, 26px);
+  font-size: clamp(21px, 1.9vw, 30px);
   line-height: 1.15;
 }
 
 .intro h2 {
   margin-top: 34px;
   color: #dcab18;
-  font-size: 23px;
+  font-size: 28px;
 }
 
 .beschrijving {
   max-width: 500px;
   margin-top: 12px;
-  font-size: 13px;
-  line-height: 1.38;
+  color: #afc2b0;
+  font-size: 16px;
+  line-height: 1.55;
 }
 
 .terrein-groep {
@@ -166,7 +193,8 @@ const terreintypes = [
 .terrein-groep h3 {
   margin-bottom: 8px;
   color: #486e4d;
-  font-size: 9px;
+  color: #78a17d;
+  font-size: 12px;
   text-transform: uppercase;
 }
 
@@ -182,14 +210,14 @@ const terreintypes = [
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 12px;
-  line-height: 1.55;
-  color: #a6b798;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #c3d0b9;
 }
 
 .terrein-groep li span {
-  width: 15px;
-  height: 15px;
+  width: 18px;
+  height: 18px;
   border-radius: 3px;
 }
 
@@ -214,25 +242,26 @@ const terreintypes = [
 
 .uitleg-kaart h3 {
   color: #67bd4c;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 700;
 }
 
 .uitleg-kaart p {
   margin-top: 9px;
-  font-size: 11px;
-  line-height: 1.35;
+  color: #b6c8b6;
+  font-size: 14px;
+  line-height: 1.55;
 }
 
 .start-knop {
   width: 100%;
-  min-height: 55px;
+  min-height: 64px;
   margin-top: auto;
   border: 1px solid #77c957;
   border-radius: 10px;
   background: #4a9139;
   color: #fff8dd;
-  font-size: 18px;
+  font-size: 21px;
 }
 
 .start-knop:hover {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import catterpieAfbeelding from '../../../assets/catterpie.png'
 import studiestapLogo from '../../../assets/studiestap-logo.svg'
 
 defineEmits<{
@@ -28,7 +29,10 @@ defineEmits<{
 
     <section class="start-inhoud">
       <img class="merk-logo" :src="studiestapLogo" alt="Studie-Stap, workshops voor scholieren" />
-      <h1>Voedselbos</h1>
+      <div class="titel-rij">
+        <h1>Voedselbos</h1>
+        <img class="catterpie" :src="catterpieAfbeelding" alt="" aria-hidden="true" />
+      </div>
       <p class="ondertitel">Leer bouwen aan de toekomst van de landbouw</p>
       <span class="scheidingslijn"></span>
       <button type="button" class="speel-knop" @click="$emit('start')">Speel nu</button>
@@ -204,6 +208,23 @@ defineEmits<{
   line-height: 1;
 }
 
+.titel-rij {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  margin-top: 14px;
+}
+
+.catterpie {
+  position: absolute;
+  right: -76px;
+  bottom: -12px;
+  width: 88px;
+  height: auto;
+  filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.28));
+  pointer-events: none;
+}
+
 .ondertitel {
   color: #94b776;
   font-size: 12px;
@@ -245,6 +266,11 @@ defineEmits<{
 
   .start-inhoud h1 {
     font-size: 42px;
+  }
+
+  .catterpie {
+    right: -50px;
+    width: 66px;
   }
 }
 </style>

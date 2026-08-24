@@ -1,0 +1,86 @@
+// 1. Copy this file to `level-4.ts` and replace the values below.
+// 2. Put the level image in `src/assets` and update the import.
+// The game discovers `level-*.ts` files automatically; no other registration is needed.
+
+import afbeelding from '../../assets/JOUW-LEVEL-AFBEELDING.png'
+import type { LevelConfig } from './types'
+
+const nieuwLevel = {
+  nummer: 4,
+  titel: 'Naam van het level',
+  beschrijving: 'Korte beschrijving op de levelkaart',
+  toelichting: 'Extra uitleg onder de beschrijving',
+  afbeelding,
+  duur: '10 min',
+  moeilijkheid: 'Middel',
+
+  // Kies welke planten beschikbaar zijn. Verwijder IDs die je niet wilt gebruiken.
+  plantIds: [
+    'walnootboom',
+    'hazelaar',
+    'wilde_appels',
+    'vlier',
+    'daslook',
+    'wilde_aardbeien',
+    'wilde_knoflook',
+    'brandnetel',
+  ],
+
+  // Dit raster is het terrein van alleen dit level. Iedere rij heeft 12 vakjes.
+  // Geldige typen: grasland, water, heuvel, schaduw, oever en akker.
+  terreinKaart: [
+    ['heuvel', 'heuvel', 'heuvel', 'heuvel', 'schaduw', 'schaduw', 'grasland', 'grasland', 'oever', 'oever', 'water', 'water'],
+    ['heuvel', 'heuvel', 'heuvel', 'schaduw', 'schaduw', 'grasland', 'grasland', 'grasland', 'oever', 'oever', 'oever', 'water'],
+    ['heuvel', 'heuvel', 'schaduw', 'schaduw', 'grasland', 'grasland', 'grasland', 'grasland', 'grasland', 'oever', 'oever', 'water'],
+    ['heuvel', 'schaduw', 'schaduw', 'grasland', 'grasland', 'akker', 'akker', 'grasland', 'grasland', 'oever', 'oever', 'water'],
+    ['grasland', 'grasland', 'grasland', 'grasland', 'akker', 'akker', 'akker', 'grasland', 'grasland', 'oever', 'oever', 'water'],
+    ['grasland', 'grasland', 'grasland', 'akker', 'akker', 'akker', 'akker', 'grasland', 'grasland', 'grasland', 'oever', 'water'],
+    ['grasland', 'grasland', 'grasland', 'akker', 'akker', 'akker', 'grasland', 'grasland', 'grasland', 'grasland', 'oever', 'oever'],
+    ['grasland', 'grasland', 'grasland', 'grasland', 'grasland', 'grasland', 'grasland', 'grasland', 'grasland', 'grasland', 'oever', 'oever'],
+    ['grasland', 'grasland', 'grasland', 'grasland', 'grasland', 'grasland', 'grasland', 'grasland', 'grasland', 'oever', 'oever', 'water'],
+    ['grasland', 'grasland', 'grasland', 'grasland', 'grasland', 'grasland', 'grasland', 'grasland', 'oever', 'oever', 'water', 'water'],
+  ],
+
+  // Voeg scorecombinaties toe wanneer het level die gebruikt.
+  combos: [],
+  maximaleScore: 72,
+  // De verwachte oplossing. Iedere positie gebruikt rijen en kolommen vanaf 1.
+  optimalePlaatsing: [
+    { plantId: 'walnootboom', rij: 1, kolom: 1, breedte: 3, hoogte: 3 },
+    { plantId: 'hazelaar', rij: 5, kolom: 1, breedte: 2, hoogte: 2 },
+    { plantId: 'hazelaar', rij: 7, kolom: 1, breedte: 2, hoogte: 2 },
+    { plantId: 'wilde_appels', rij: 2, kolom: 6, breedte: 2, hoogte: 2 },
+    { plantId: 'wilde_appels', rij: 5, kolom: 8, breedte: 2, hoogte: 2 },
+    { plantId: 'vlier', rij: 1, kolom: 9, breedte: 2, hoogte: 1 },
+    { plantId: 'vlier', rij: 2, kolom: 9, breedte: 2, hoogte: 1 },
+    { plantId: 'vlier', rij: 3, kolom: 10, breedte: 2, hoogte: 1 },
+    { plantId: 'daslook', rij: 1, kolom: 5, breedte: 1, hoogte: 1 },
+    { plantId: 'daslook', rij: 1, kolom: 6, breedte: 1, hoogte: 1 },
+    { plantId: 'daslook', rij: 2, kolom: 4, breedte: 1, hoogte: 1 },
+    { plantId: 'daslook', rij: 3, kolom: 4, breedte: 1, hoogte: 1 },
+    { plantId: 'daslook', rij: 4, kolom: 2, breedte: 1, hoogte: 1 },
+    { plantId: 'wilde_aardbeien', rij: 1, kolom: 8, breedte: 1, hoogte: 1 },
+    { plantId: 'wilde_aardbeien', rij: 2, kolom: 8, breedte: 1, hoogte: 1 },
+    { plantId: 'wilde_aardbeien', rij: 2, kolom: 11, breedte: 1, hoogte: 1 },
+    { plantId: 'wilde_aardbeien', rij: 3, kolom: 8, breedte: 1, hoogte: 1 },
+    { plantId: 'wilde_aardbeien', rij: 4, kolom: 10, breedte: 1, hoogte: 1 },
+    { plantId: 'wilde_aardbeien', rij: 4, kolom: 11, breedte: 1, hoogte: 1 },
+    { plantId: 'wilde_knoflook', rij: 4, kolom: 6, breedte: 1, hoogte: 1 },
+    { plantId: 'wilde_knoflook', rij: 4, kolom: 7, breedte: 1, hoogte: 1 },
+    { plantId: 'wilde_knoflook', rij: 5, kolom: 5, breedte: 1, hoogte: 1 },
+    { plantId: 'wilde_knoflook', rij: 6, kolom: 4, breedte: 1, hoogte: 1 },
+    { plantId: 'wilde_knoflook', rij: 6, kolom: 6, breedte: 1, hoogte: 1 },
+    { plantId: 'brandnetel', rij: 5, kolom: 6, breedte: 1, hoogte: 1 },
+    { plantId: 'brandnetel', rij: 5, kolom: 7, breedte: 1, hoogte: 1 },
+    { plantId: 'brandnetel', rij: 6, kolom: 5, breedte: 1, hoogte: 1 },
+    { plantId: 'brandnetel', rij: 6, kolom: 7, breedte: 1, hoogte: 1 },
+    { plantId: 'brandnetel', rij: 7, kolom: 4, breedte: 1, hoogte: 1 },
+  ],
+  gerecht: 'Naam van het gerecht dat dit level ontgrendelt',
+
+  // Zet op true wanneer eerst het aparte uitlegscherm moet worden geopend.
+  heeftUitleg: false,
+  uitgelicht: false,
+} satisfies LevelConfig
+
+export default nieuwLevel
