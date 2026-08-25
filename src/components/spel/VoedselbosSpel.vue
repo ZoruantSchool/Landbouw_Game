@@ -16,9 +16,11 @@ import StartScherm from './schermen/StartScherm.vue'
 import IntroductieScherm from './schermen/IntroductieScherm.vue'
 import LevelDrieUitlegScherm from './schermen/LevelDrieUitlegScherm.vue'
 import AllePlantenScherm from './schermen/AllePlantenScherm.vue'
+import HoeWerktHetScherm from './schermen/HoeWerktHetScherm.vue'
 
 const huidigScherm = ref<SpelScherm>('start')
 const vorigSchermVoorPlanten = ref<SpelScherm>('levelKeuze')
+const vorigSchermVoorUitleg = ref<SpelScherm>('start')
 const informatiePlantId = ref<string>()
 const gekozenLevel = ref(1)
 const voltooideLevels = ref<number[]>([])
@@ -605,6 +607,11 @@ function openPlantenInfo(vanaf: SpelScherm, plantId?: string) {
   huidigScherm.value = 'plantenInfo'
 }
 
+function openHoeWerktHet(vanaf: SpelScherm) {
+  vorigSchermVoorUitleg.value = vanaf
+  huidigScherm.value = 'hoeWerktHet'
+}
+
 function openAllePlantenVanuitLevelKeuze() {
   openPlantenInfo('levelKeuze')
 }
@@ -661,7 +668,12 @@ function openVolgendLevel() {
   <StartScherm
     v-if="huidigScherm === 'start'"
     @start="huidigScherm = 'introductie'"
-    @uitleg="huidigScherm = 'introductie'"
+    @uitleg="openHoeWerktHet('start')"
+  />
+
+  <HoeWerktHetScherm
+    v-else-if="huidigScherm === 'hoeWerktHet'"
+    @sluiten="huidigScherm = vorigSchermVoorUitleg"
   />
 
   <IntroductieScherm
@@ -760,7 +772,7 @@ function openVolgendLevel() {
       </ul>
 
       <nav class="spel-tabs" aria-label="Spel tabbladen">
-        <button type="button" @click="huidigScherm = actiefLevel.heeftUitleg ? 'levelUitleg' : 'levelKeuze'">Uitleg</button>
+        <button type="button" @click="openHoeWerktHet('spel')">Uitleg</button>
         <button
           type="button"
           :class="{ 'tutorial-highlight': isLevelEen && tutorialStap === 3 }"

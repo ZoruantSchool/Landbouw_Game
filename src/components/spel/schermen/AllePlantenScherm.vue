@@ -43,8 +43,8 @@ function plantMetId(id: string) {
     </header>
 
     <nav class="planten-tabs" aria-label="Informatieschermen">
-      <button type="button" @click="$emit('levels')">Levels</button>
-      <button type="button" @click="$emit('openGerechten')">Gerechten</button>
+      <button v-if="!terugNaarLevel" type="button" @click="$emit('levels')">Levels</button>
+      <button v-if="!terugNaarLevel" type="button" @click="$emit('openGerechten')">Gerechten</button>
       <button type="button" class="actief">Alle planten</button>
     </nav>
 
