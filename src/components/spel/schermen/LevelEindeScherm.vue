@@ -57,7 +57,7 @@ const bordPosities = [
 ]
 function bordStijl(index: number) {
   const pos = bordPosities[index]
-  return { left: `${pos.left}%`, top: `${pos.top}%` }
+  return { left: `${pos.left}%`, top: `${pos.top}%`, animationDelay: `${0.5 + index * 0.06}s` }
 }
 const gemisteCombos = computed(() => props.scoreResultaat?.combos.filter((combo) => !combo.actief) ?? [])
 const maxComboPunten = computed(() => props.levelConfig.combos.reduce((totaal, combo) => totaal + combo.bonus, 0))
@@ -113,7 +113,12 @@ function verbeterTip(comboId: string) {
       <h1>Jouw feestmaal</h1>
       <p>Level {{ level }} · Totaalscore {{ score }}/100</p>
       <div class="feest-sterren" :aria-label="`${sterren} van de 3 sterren`">
-        <span v-for="ster in 3" :key="ster" :class="{ leeg: ster > sterren }">★</span>
+        <span
+          v-for="ster in 3"
+          :key="ster"
+          :class="{ leeg: ster > sterren }"
+          :style="{ animationDelay: `${ster * 0.12}s` }"
+        >★</span>
       </div>
 
       <div class="feest-tafel-wrap">
@@ -289,7 +294,7 @@ function verbeterTip(comboId: string) {
 
     <div class="einde-acties">
       <button type="button" class="opnieuw" @click="$emit('opnieuw')">Opnieuw</button>
-      <button type="button" class="begin" @click="$emit('levels')">Naar beginscherm</button>
+      <button type="button" class="begin" @click="$emit('levels')">Naar levels</button>
     </div>
     </template>
   </main>
@@ -304,10 +309,15 @@ function verbeterTip(comboId: string) {
 .feest-scherm h1 { color: #dda915; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(26px, 4vw, 38px); line-height: 1; }
 .feest-scherm > p { margin-top: 2px; color: #a6b99d; font-size: 13px; }
 .feest-sterren { display: flex; gap: 34px; margin-top: 4px; color: #e4ad1a; font-size: 22px; line-height: 1; }
+.feest-sterren span { display: inline-block; animation: voedselbos-pop-in 0.5s ease both; }
 .feest-sterren .leeg { color: transparent; -webkit-text-stroke: 2px #e4ad1a; text-stroke: 2px #e4ad1a; }
-.feest-tafel-wrap { position: relative; width: min(94vw, 1600px, calc(65dvh * 1.666)); margin-top: -6dvh; }
+.feest-tafel-wrap { position: relative; width: min(94vw, 1600px, calc(65dvh * 1.666)); margin-top: -6dvh; animation: voedselbos-fade-in-up 0.6s ease both; animation-delay: 0.15s; }
 .feest-tafel { display: block; width: 100%; filter: drop-shadow(0 16px 18px rgba(0, 0, 0, .32)); }
-.feest-bord { position: absolute; width: 7.5%; transform: translate(-50%, -50%); filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .35)); }
+.feest-bord { position: absolute; width: 7.5%; transform: translate(-50%, -50%); filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .35)); opacity: 0; animation: voedselbos-bord-pop-in 0.4s ease both; }
+@keyframes voedselbos-bord-pop-in {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
 .feest-scherm h2 { margin-top: -16dvh; color: #dda915; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(20px, 2.4vw, 26px); }
 .feest-score { margin-top: 2px; color: #b8c8af; font-size: 13px; }
 .feest-scherm strong { margin-top: 2px; color: #e3c45b; font-family: Georgia, 'Times New Roman', serif; font-size: 14px; font-style: italic; }
@@ -316,7 +326,8 @@ function verbeterTip(comboId: string) {
 .feest-decor { position: absolute; width: 180px; height: 120px; border-radius: 50%; background: rgba(104, 169, 89, .14); pointer-events: none; }
 .feest-decor.links { top: -52px; left: -68px; }
 .feest-decor.rechts { right: -62px; bottom: -58px; }
-.resultaat-balk { display: grid; grid-template-columns: 250px 1fr 155px 80px; align-items: center; gap: 20px; width: calc(100% - 102px); min-height: 124px; margin: 13px auto 8px; padding: 12px 55px; border: 2px solid #079bd9; border-radius: 16px; background: #0d2b13; }
+.resultaat-balk { display: grid; grid-template-columns: 250px 1fr 155px 80px; align-items: center; gap: 20px; width: calc(100% - 102px); min-height: 124px; margin: 13px auto 8px; padding: 12px 55px; border: 2px solid #079bd9; border-radius: 16px; background: #0d2b13; animation: voedselbos-fade-in-up 0.5s ease both; }
+.resultaat-grid { animation: voedselbos-fade-in-up 0.5s ease both; animation-delay: 0.1s; }
 .resultaat-balk h1 { color: #dcaa17; font-family: Georgia, 'Times New Roman', serif; font-size: 34px; }
 .resultaat-balk div > span { color: #77977a; font-size: 14px; }
 .resultaat-balk > strong { color: #d5a832; font-size: 18px; }
@@ -334,7 +345,8 @@ function verbeterTip(comboId: string) {
 .opbrengst-resultaat span { color: #7fa678; font-size: 11px; text-transform: uppercase; }.opbrengst-resultaat strong { margin-top: 3px; color: #8dd46f; font-family: Georgia, 'Times New Roman', serif; font-size: 25px; }.opbrengst-resultaat small { margin-top: 5px; color: #88a989; font-size: 12px; font-weight: 700; }
 .combo-lijst { display: grid; gap: 7px; padding-top: 12px; border-top: 1px solid #294c2e; }
 .combo-lijst h3 { margin-bottom: 2px; color: #71b25b; font-size: 13px; text-transform: uppercase; }
-.combo-lijst article { display: grid; gap: 3px; padding: 9px; border: 1px solid #4aa33a; border-left: 5px solid #4aa33a; border-radius: 6px; background: #183b1d; }
+.combo-lijst article { display: grid; gap: 3px; padding: 9px; border: 1px solid #4aa33a; border-left: 5px solid #4aa33a; border-radius: 6px; background: #183b1d; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.combo-lijst article:hover { transform: translateX(4px); box-shadow: 0 8px 16px rgba(0, 0, 0, 0.28); }
 .combo-lijst article.gemist { border-color: #472323; border-left-color: #a12e2e; background: #181818; }
 .combo-lijst strong { color: #76b665; font-size: 13px; }
 .combo-lijst .gemist strong { color: #a84e4e; }
@@ -361,11 +373,14 @@ function verbeterTip(comboId: string) {
 .informatie-sectie { width: calc(100% - 102px); margin: 10px auto 0; }
 .informatie-tab { display: flex; width: fit-content; min-width: 180px; height: 38px; align-items: center; padding: 0 14px; border: 1px solid #3f8135; border-bottom: 0; border-radius: 7px 7px 0 0; background: #102e16; color: #8ebf79; font-size: 11px; font-weight: 700; }
 .informatie-paneel { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px; border: 1px solid #3f8135; border-radius: 0 7px 7px 7px; background: #0d2813; }
-.informatie-paneel a { display: flex; min-height: 52px; align-items: center; padding: 11px 14px; border-left: 4px solid #4b963b; background: #15371b; color: #9fc98e; font-size: 12px; line-height: 1.4; text-decoration: none; }
-.informatie-paneel a:hover, .informatie-paneel a:focus-visible { background: #1b4622; color: #f2e5bc; outline: 1px solid #6eaf52; }
+.informatie-paneel a { display: flex; min-height: 52px; align-items: center; padding: 11px 14px; border-left: 4px solid #4b963b; background: #15371b; color: #9fc98e; font-size: 12px; line-height: 1.4; text-decoration: none; transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease; }
+.informatie-paneel a:hover, .informatie-paneel a:focus-visible { background: #1b4622; color: #f2e5bc; outline: 1px solid #6eaf52; transform: translateX(4px); }
 .einde-acties { display: flex; justify-content: flex-end; gap: 14px; width: calc(100% - 102px); margin: 10px auto 0; }
 .einde-acties button { width: 260px; min-height: 66px; border-radius: 10px; font-size: 14px; font-weight: 700; }
 .opnieuw { border: 2px solid #284d2d; background: #102e16; color: #638065; }.begin { border: 0; background: #4b963b; color: #fff; }
+.opnieuw:hover { border-color: #4c933c; color: #9fc98e; }
+.begin:hover { background: #59ab41; box-shadow: 0 8px 20px rgba(75, 150, 59, 0.4); }
+.feest-acties button.compact:hover { box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3); }
 @media (max-width: 1000px) { .einde-scherm { width: 100%; max-width: none; min-height: 100dvh; margin: 0; }.resultaat-balk { width: calc(100% - 40px); padding: 14px 30px; }.resultaat-grid { grid-template-columns: 1fr 1fr; width: calc(100% - 40px); }.beter-paneel { grid-column: 1 / -1; }.paneel { height: auto; min-height: 500px; }.gerecht { margin-top: 24px; }.informatie-sectie, .einde-acties { width: calc(100% - 40px); } }
 @media (max-width: 680px) { .resultaat-balk { grid-template-columns: 1fr auto; padding: 14px 20px; }.sterren { grid-row: 2; grid-column: 1 / -1; }.sterren img { width: 78px; height: 60px; }.opbrengst-samenvatting { grid-column: 1 / -1; }.resultaat-grid { grid-template-columns: 1fr; }.beter-paneel { grid-column: auto; }.paneel { min-height: 0; }.informatie-paneel { grid-template-columns: 1fr; }.einde-acties { flex-direction: column; }.einde-acties button { width: 100%; } }
 </style>

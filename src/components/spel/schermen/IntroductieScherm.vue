@@ -62,6 +62,7 @@ const leerwegen = [
           :key="leerweg.titel"
           class="leerweg"
           :class="`leerweg-${leerweg.kleur}`"
+          :style="{ '--index': index }"
         >
           <h2>{{ index + 1 }}. {{ leerweg.titel }}</h2>
           <p>{{ leerweg.beschrijving }}</p>
@@ -128,7 +129,6 @@ const leerwegen = [
 
 .introductie-beeld {
   min-height: 0;
-  border: 2px solid #0aa7ff;
   overflow: hidden;
 }
 
@@ -136,6 +136,11 @@ const leerwegen = [
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.introductie-beeld:hover img {
+  transform: scale(1.04);
 }
 
 .introductie-inhoud {
@@ -146,6 +151,7 @@ const leerwegen = [
   gap: 8px;
   overflow-y: auto;
   padding: 16px 5%;
+  animation: voedselbos-fade-in-up 0.5s ease both;
 }
 
 .introductie-titel {
@@ -198,6 +204,15 @@ const leerwegen = [
   border-left-width: 6px;
   border-radius: 8px;
   background: #102b17;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  animation: voedselbos-fade-in-up 0.5s ease both;
+  animation-delay: calc(var(--index, 0) * 0.08s);
+}
+
+.leerweg:hover {
+  transform: translateY(-3px);
+  background: #14361b;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.3);
 }
 
 .leerweg h2 {
@@ -235,6 +250,12 @@ const leerwegen = [
   border: 1px solid #8a741c;
   border-radius: 8px;
   background: #254b29;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.game-uitleg:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
 }
 
 .game-uitleg h2 {
@@ -263,6 +284,7 @@ const leerwegen = [
 
 .begin-knop:hover {
   background: #4a9538;
+  box-shadow: 0 8px 20px rgba(74, 149, 56, 0.4);
 }
 
 @media (max-width: 800px) {

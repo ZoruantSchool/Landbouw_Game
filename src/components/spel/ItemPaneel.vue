@@ -136,6 +136,7 @@ function plantNaam(item: VoedselbosItem) {
   background: #102a16;
   color: #d8ead5;
   overflow: hidden;
+  transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .gewas-selectie {
@@ -154,6 +155,11 @@ function plantNaam(item: VoedselbosItem) {
 
 .gewas:hover {
   background: #173620;
+  transform: translateX(3px);
+}
+
+.gewas:hover .gewas-icoon img {
+  transform: scale(1.1);
 }
 
 .gewas.geselecteerd {
@@ -199,6 +205,7 @@ function plantNaam(item: VoedselbosItem) {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  transition: transform 0.2s ease;
 }
 
 .gewas-inhoud {

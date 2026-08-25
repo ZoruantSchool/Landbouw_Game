@@ -4,8 +4,8 @@ import type { LevelConfig } from './types'
 const levelTwee = {
   nummer: 2,
   titel: 'Bramen-frambozenjam met munt',
-  beschrijving: 'Een kleiner voedselbos met één boom, twee struiken en twee bodemplanten',
-  toelichting: 'Ontdek welke planten schaduw geven, welke daarvan profiteren en welke de bodem verbeteren voor hun buren.',
+  beschrijving: 'Verdieping',
+  toelichting: 'Een kleiner voedselbos met één boom, twee struiken en twee bodemplanten. Ontdek welke planten schaduw geven, welke daarvan profiteren en welke de bodem verbeteren voor hun buren.',
   afbeelding,
   duur: '8 min',
   moeilijkheid: 'Middel',

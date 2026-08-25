@@ -189,6 +189,7 @@ const hoverVoorbeeld = computed(() => {
   border: 1px solid rgba(255, 255, 255, 0.035);
   border-radius: 0;
   padding: 2px;
+  transition: outline-color 0.15s ease, filter 0.15s ease;
 }
 
 .vakje:hover,
@@ -197,6 +198,7 @@ const hoverVoorbeeld = computed(() => {
   z-index: 1;
   outline: 2px solid #f3ca32;
   outline-offset: -2px;
+  filter: brightness(1.08);
 }
 
 .vakje.tutorial-terrein-highlight,
@@ -271,6 +273,7 @@ const hoverVoorbeeld = computed(() => {
   pointer-events: none;
   place-items: center;
   z-index: 2;
+  animation: voedselbos-pop-in 0.25s ease both;
 }
 
 .plant-overlay::after {

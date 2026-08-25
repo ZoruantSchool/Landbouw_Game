@@ -38,12 +38,16 @@ function statusVoor(level: number) {
     return 'Vergrendeld'
   }
 
+  if (isHuidig(level)) {
+    return 'Volgende'
+  }
+
   return props.levels.find((configuratie) => configuratie.nummer === level)?.uitgelicht ? 'Nog te doen' : 'Beschikbaar'
 }
 
 function sterrenVoor(level: number) {
   const aantal = props.levelSterren?.[level] ?? 0
-  return '★'.repeat(aantal)
+  return '★'.repeat(aantal) + '☆'.repeat(3 - aantal)
 }
 
 function knopVoor(level: number) {
@@ -82,14 +86,14 @@ function knopVoor(level: number) {
 
       <div class="levels">
         <article
-          v-for="level in levels"
+          v-for="(level, index) in levels"
           :key="level.nummer"
           class="level-kaart"
           :class="{
             huidig: isHuidig(level.nummer),
-            'level-drie': level.uitgelicht,
             vergrendeld: isVergrendeld(level.nummer),
           }"
+          :style="{ '--index': index }"
         >
           <div class="kaart-status">
             <span>{{ statusVoor(level.nummer) }}</span>
@@ -99,10 +103,9 @@ function knopVoor(level: number) {
           <img :src="level.afbeelding" :alt="`Illustratie voor level ${level.nummer}: ${level.titel}`" />
 
           <div class="kaart-inhoud">
-            <small>Level {{ level.nummer }}</small>
+            <small>Level {{ level.nummer }}<template v-if="!level.uitgelicht"> · {{ level.beschrijving }}</template></small>
             <h2>{{ level.titel }}</h2>
-            <p>{{ level.beschrijving }}</p>
-            <span v-if="level.toelichting">{{ level.toelichting }}</span>
+            <p v-if="level.uitgelicht">{{ level.beschrijving }}</p>
 
             <div class="kaart-details">
               <span>{{ level.duur }}</span>
@@ -113,7 +116,7 @@ function knopVoor(level: number) {
             <div class="voortgang">
               <span :style="{ width: isVoltooid(level.nummer) ? '100%' : '0%' }"></span>
             </div>
-            <small v-if="level.uitgelicht" class="voortgang-label">
+            <small class="voortgang-label">
               {{ isVoltooid(level.nummer) ? '100% voltooid' : '0% voltooid' }}
             </small>
 
@@ -230,16 +233,25 @@ function knopVoor(level: number) {
 
 .level-kaart {
   display: grid;
-  grid-template-rows: 48px 118px 1fr;
-  min-height: 450px;
+  grid-template-rows: 48px 130px 1fr;
+  min-height: 460px;
   overflow: hidden;
   border: 1px solid #397036;
-  border-radius: 8px;
+  border-radius: 16px;
   background: #102b17;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  animation: voedselbos-fade-in-up 0.5s ease both;
+  animation-delay: calc(var(--index, 0) * 0.1s);
+}
+
+.level-kaart:not(.vergrendeld):hover {
+  transform: translateY(-6px);
+  border-color: #4c933c;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.35);
 }
 
 .level-kaart.huidig {
-  border: 3px solid #0aa7ff;
+  border: 3px solid #dda915;
 }
 
 .level-kaart.vergrendeld {
@@ -250,7 +262,7 @@ function knopVoor(level: number) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 14px;
+  padding: 14px 18px 8px;
 }
 
 .kaart-status span {
@@ -273,8 +285,13 @@ function knopVoor(level: number) {
 
 .level-kaart > img {
   width: 100%;
-  height: 118px;
+  height: 130px;
   object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+.level-kaart:not(.vergrendeld):hover > img {
+  transform: scale(1.06);
 }
 
 .kaart-inhoud {
@@ -298,11 +315,12 @@ function knopVoor(level: number) {
   font-weight: 700;
 }
 
-.kaart-inhoud > p,
-.kaart-inhoud > span {
-  color: #668568;
-  font-size: 10px;
-  line-height: 1.45;
+.kaart-inhoud > p {
+  color: #eee2bd;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .kaart-details {
@@ -338,6 +356,11 @@ function knopVoor(level: number) {
   background: #dda915;
 }
 
+.voortgang-label {
+  color: #6c8a6e;
+  font-size: 9px;
+}
+
 .kaart-inhoud button {
   min-height: 40px;
   border: 1px solid #4c933c;
@@ -347,97 +370,22 @@ function knopVoor(level: number) {
   font-weight: 700;
 }
 
+.kaart-inhoud button:not(:disabled):hover {
+  background: rgba(111, 189, 85, 0.14);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
+}
+
 .huidig .kaart-inhoud button {
   border-color: #dda915;
-  background: #dda915;
-  color: #152418;
+  color: #f0c94a;
+}
+
+.huidig .kaart-inhoud button:not(:disabled):hover {
+  background: rgba(221, 169, 21, 0.16);
 }
 
 .kaart-inhoud button:disabled {
   background: #071b0d;
-}
-
-.level-kaart.level-drie {
-  grid-template-rows: 70px 130px 1fr;
-  min-height: 542px;
-  border: 2px solid #39752f;
-  border-radius: 12px;
-  background: #102d16;
-}
-
-.level-kaart.level-drie.huidig {
-  border-color: #39752f;
-}
-
-.level-drie .kaart-status {
-  padding: 14px;
-  background: #061c0b;
-}
-
-.level-drie .kaart-status span,
-.level-drie.huidig .kaart-status span {
-  background: #438c34;
-  color: #ffffff;
-  font-weight: 700;
-}
-
-.level-drie > img {
-  height: 130px;
-  object-position: center 62%;
-}
-
-.level-drie .kaart-inhoud {
-  gap: 5px;
-  padding: 12px 22px 18px;
-}
-
-.level-drie .kaart-inhoud > small {
-  color: #4f9950;
-  font-size: 10px;
-  text-transform: none;
-}
-
-.level-drie .kaart-inhoud h2 {
-  font-size: 21px;
-  line-height: 1.15;
-}
-
-.level-drie .kaart-inhoud > p {
-  color: #eee2bd;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.35;
-}
-
-.level-drie .kaart-details {
-  margin-top: 50px;
-}
-
-.level-drie .kaart-details span {
-  min-width: 57px;
-  border: 1px solid #2b6630;
-  background: #173f1d;
-  color: #68a75a;
-  text-align: center;
-}
-
-.level-drie .voortgang {
-  margin-top: 6px;
-}
-
-.level-drie .voortgang-label {
-  color: #4d804d;
-  font-size: 9px;
-}
-
-.level-drie .kaart-inhoud button,
-.level-drie.huidig .kaart-inhoud button {
-  min-height: 46px;
-  margin-top: 4px;
-  border: 2px solid #39752f;
-  background: #14371a;
-  color: #69ba4d;
 }
 
 .level-voet {

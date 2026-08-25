@@ -194,11 +194,17 @@ defineEmits<{
   border-radius: 8px;
   background: rgba(3, 18, 8, 0.88);
   text-align: center;
+  animation: voedselbos-fade-in-up 0.6s ease both;
 }
 
 .merk-logo {
   width: 120px;
   height: auto;
+  transition: transform 0.25s ease;
+}
+
+.merk-logo:hover {
+  transform: scale(1.05);
 }
 
 .start-inhoud h1 {
@@ -224,6 +230,7 @@ defineEmits<{
   height: auto;
   filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.28));
   pointer-events: none;
+  animation: voedselbos-bob 3.2s ease-in-out infinite;
 }
 
 .ondertitel {
@@ -252,12 +259,18 @@ defineEmits<{
 
 .speel-knop:hover {
   background: #5aaa43;
+  box-shadow: 0 6px 18px rgba(76, 150, 57, 0.45);
 }
 
 .uitleg-knop {
   border: 1px solid #3d7d46;
   background: transparent;
   color: #67b94c;
+}
+
+.uitleg-knop:hover {
+  border-color: #67b94c;
+  background: rgba(103, 185, 76, 0.1);
 }
 
 @media (max-width: 600px) {

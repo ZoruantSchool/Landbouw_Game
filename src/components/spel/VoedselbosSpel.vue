@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { gerechten } from '../../data/voedselbosData'
 import { planten, standaardVoedselbosItem } from '../../data/planten'
 import { levels, vindLevel } from '../../data/levels'
 import type { SpelScherm, TerreinSoort, VoedselbosPlaatsing } from '../../types/spel'
@@ -18,18 +17,38 @@ import LevelDrieUitlegScherm from './schermen/LevelDrieUitlegScherm.vue'
 import AllePlantenScherm from './schermen/AllePlantenScherm.vue'
 import HoeWerktHetScherm from './schermen/HoeWerktHetScherm.vue'
 
+const OPSLAG_SLEUTEL = 'voedselbos-voortgang'
+
+type OpgeslagenVoortgang = {
+  voltooideLevels: number[]
+  levelScores: Record<number, number>
+  levelPercentages: Record<number, number>
+  snelleHandenBehaald: boolean
+}
+
+function laadVoortgang(): OpgeslagenVoortgang | null {
+  try {
+    const ruw = localStorage.getItem(OPSLAG_SLEUTEL)
+    return ruw ? JSON.parse(ruw) : null
+  } catch {
+    return null
+  }
+}
+
+const opgeslagenVoortgang = laadVoortgang()
+
 const huidigScherm = ref<SpelScherm>('start')
 const vorigSchermVoorPlanten = ref<SpelScherm>('levelKeuze')
 const vorigSchermVoorUitleg = ref<SpelScherm>('start')
 const informatiePlantId = ref<string>()
 const gekozenLevel = ref(1)
-const voltooideLevels = ref<number[]>([])
+const voltooideLevels = ref<number[]>(opgeslagenVoortgang?.voltooideLevels ?? [])
 const hoogsteVoltooideLevel = computed(() => voltooideLevels.value.reduce((hoogste, level) => Math.max(hoogste, level), 0))
 const tutorialStap = ref(-1)
 const tutorialComboGetoond = ref(false)
-const levelScores = ref<Record<number, number>>({})
-const levelPercentages = ref<Record<number, number>>({})
-const snelleHandenBehaald = ref(false)
+const levelScores = ref<Record<number, number>>(opgeslagenVoortgang?.levelScores ?? {})
+const levelPercentages = ref<Record<number, number>>(opgeslagenVoortgang?.levelPercentages ?? {})
+const snelleHandenBehaald = ref(opgeslagenVoortgang?.snelleHandenBehaald ?? false)
 const levelStartTijd = ref<number | null>(null)
 const totaleScore = computed(() => Object.values(levelScores.value).reduce((totaal, score) => totaal + score, 0))
 const levelSterren = computed(() =>
@@ -570,6 +589,16 @@ function skipTutorial() {
   tutorialStap.value = -1
 }
 
+watch([voltooideLevels, levelScores, levelPercentages, snelleHandenBehaald], () => {
+  const voortgang: OpgeslagenVoortgang = {
+    voltooideLevels: voltooideLevels.value,
+    levelScores: levelScores.value,
+    levelPercentages: levelPercentages.value,
+    snelleHandenBehaald: snelleHandenBehaald.value,
+  }
+  localStorage.setItem(OPSLAG_SLEUTEL, JSON.stringify(voortgang))
+}, { deep: true })
+
 watch(scoreResultaat, (resultaat) => {
   if (!isLevelEen.value || tutorialComboGetoond.value || tutorialStap.value < 6) {
     return
@@ -697,7 +726,6 @@ function openVolgendLevel() {
 
   <GerechtenScherm
     v-else-if="huidigScherm === 'gerechten'"
-    :gerechten="gerechten"
     :hoogste-voltooide-level="hoogsteVoltooideLevel"
     :voltooide-levels="voltooideLevels"
     :totaal-levels="levels.length"
@@ -730,7 +758,7 @@ function openVolgendLevel() {
     :level-config="actiefLevel"
     :terrein-kaart="actiefLevel.terreinKaart"
     :score-resultaat="scoreResultaat"
-    @levels="huidigScherm = 'start'"
+    @levels="huidigScherm = 'levelKeuze'"
     @opnieuw="speelLevelOpnieuw"
     @volgend="openVolgendLevel"
   />
