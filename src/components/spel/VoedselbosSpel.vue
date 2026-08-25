@@ -21,9 +21,23 @@ const huidigScherm = ref<SpelScherm>('start')
 const vorigSchermVoorPlanten = ref<SpelScherm>('levelKeuze')
 const informatiePlantId = ref<string>()
 const gekozenLevel = ref(1)
-const hoogsteVoltooideLevel = ref(0)
+const voltooideLevels = ref<number[]>([])
+const hoogsteVoltooideLevel = computed(() => voltooideLevels.value.reduce((hoogste, level) => Math.max(hoogste, level), 0))
 const tutorialStap = ref(-1)
 const tutorialComboGetoond = ref(false)
+const levelScores = ref<Record<number, number>>({})
+const levelPercentages = ref<Record<number, number>>({})
+const snelleHandenBehaald = ref(false)
+const levelStartTijd = ref<number | null>(null)
+const totaleScore = computed(() => Object.values(levelScores.value).reduce((totaal, score) => totaal + score, 0))
+const levelSterren = computed(() =>
+  Object.fromEntries(
+    Object.entries(levelPercentages.value).map(([level, percentage]) => [
+      level,
+      percentage >= 80 ? 3 : percentage >= 50 ? 2 : 1,
+    ]),
+  ),
+)
 const actiefLevel = computed(() => vindLevel(gekozenLevel.value))
 const plantenPerId = computed(() => new Map(planten.map((plant) => [plant.id, plant])))
 const actieveItems = computed(() =>
@@ -319,6 +333,51 @@ function invloedszoneCombo(kruidId: string, bronIds: string[]) {
   )
 }
 
+function invloedszoneVakjes(bron: VoedselbosPlaatsing) {
+  const indices = new Set<number>()
+
+  bron.vakjes.forEach((index) => {
+    const { rij, kolom } = coordinaten(index)
+
+    for (let rijOffset = -1; rijOffset <= 1; rijOffset += 1) {
+      for (let kolomOffset = -1; kolomOffset <= 1; kolomOffset += 1) {
+        const doelRij = rij + rijOffset
+        const doelKolom = kolom + kolomOffset
+        const doelIndex = doelRij * rasterKolommen.value + doelKolom
+
+        if (
+          doelRij >= 0
+          && doelKolom >= 0
+          && doelRij < rasterRijen.value
+          && doelKolom < rasterKolommen.value
+          && !bron.vakjes.includes(doelIndex)
+        ) {
+          indices.add(doelIndex)
+        }
+      }
+    }
+  })
+
+  return indices
+}
+
+function staatAangrenzendAanInvloedszone(plaatsing: VoedselbosPlaatsing, bron: VoedselbosPlaatsing) {
+  const zone = invloedszoneVakjes(bron)
+
+  return plaatsing.vakjes.some((index) => {
+    const { rij, kolom } = coordinaten(index)
+
+    for (let rijOffset = -1; rijOffset <= 1; rijOffset += 1) {
+      for (let kolomOffset = -1; kolomOffset <= 1; kolomOffset += 1) {
+        const doelIndex = (rij + rijOffset) * rasterKolommen.value + (kolom + kolomOffset)
+        if (zone.has(doelIndex)) return true
+      }
+    }
+
+    return false
+  })
+}
+
 function voldoetAanNabijheid(plaatsing: VoedselbosPlaatsing) {
   const id = itemId(plaatsing)
 
@@ -335,7 +394,7 @@ function voldoetAanNabijheid(plaatsing: VoedselbosPlaatsing) {
   }
 
   if (id === 'vlier') {
-    return plaatsingenVan('wilde_aardbeien').some((ander) => zijnAangrenzend(plaatsing, ander))
+    return plaatsingenVan('wilde_aardbeien', 'bosaardbei').some((ander) => zijnAangrenzend(plaatsing, ander))
   }
 
   if (id === 'wilde_aardbeien') {
@@ -348,6 +407,14 @@ function voldoetAanNabijheid(plaatsing: VoedselbosPlaatsing) {
 
   if (id === 'brandnetel') {
     return plaatsingenVan('wilde_knoflook').some((ander) => zijnAangrenzend(plaatsing, ander))
+  }
+
+  if (id === 'munt') {
+    return plaatsingenVan('kersenboom').some((bron) => staatInInvloedszone(plaatsing, bron))
+  }
+
+  if (id === 'klaver') {
+    return plaatsingenVan('kersenboom').some((bron) => staatAangrenzendAanInvloedszone(plaatsing, bron))
   }
 
   return true
@@ -402,7 +469,11 @@ function berekenLevelDrieScore(huidigePlaatsingen: VoedselbosPlaatsing[]) {
       (combo.id === 'lagencombo' && invloedszoneCombo('daslook', ['walnootboom', 'hazelaar'])) ||
       (combo.id === 'beekdalcombo' && aangrenzendOpTerrein('vlier', 'wilde_aardbeien', 'oever')) ||
       (combo.id === 'bosrandcombo' && invloedszoneCombo('daslook', ['wilde_appels'])) ||
-      (combo.id === 'bodemcombo' && aangrenzendOpTerrein('wilde_knoflook', 'brandnetel', 'akker'))
+      (combo.id === 'bodemcombo' && aangrenzendOpTerrein('wilde_knoflook', 'brandnetel', 'akker')) ||
+      (combo.id === 'schaduwcombo' && invloedszoneCombo('munt', ['kersenboom'])) ||
+      (combo.id === 'klaverbodemcombo' && plaatsingenVan('klaver').some((klaver) =>
+        plaatsingenVan('kersenboom').some((bron) => staatAangrenzendAanInvloedszone(klaver, bron)),
+      ))
 
     return {
       ...combo,
@@ -519,7 +590,13 @@ function openLevel(level: number) {
   resetBord()
   tutorialStap.value = configuratie.nummer === 1 ? 0 : -1
   tutorialComboGetoond.value = false
+  levelStartTijd.value = configuratie.heeftUitleg ? null : Date.now()
   huidigScherm.value = configuratie.heeftUitleg ? 'levelUitleg' : 'spel'
+}
+
+function startSpelVanuitUitleg() {
+  levelStartTijd.value = Date.now()
+  huidigScherm.value = 'spel'
 }
 
 function openPlantenInfo(vanaf: SpelScherm, plantId?: string) {
@@ -541,7 +618,23 @@ function rondLevelAf() {
     return
   }
 
-  hoogsteVoltooideLevel.value = Math.max(hoogsteVoltooideLevel.value, gekozenLevel.value)
+  if (!voltooideLevels.value.includes(gekozenLevel.value)) {
+    voltooideLevels.value = [...voltooideLevels.value, gekozenLevel.value]
+  }
+
+  const resultaat = scoreResultaat.value
+  const huidigeScore = levelScores.value[gekozenLevel.value] ?? 0
+  levelScores.value = { ...levelScores.value, [gekozenLevel.value]: Math.max(huidigeScore, resultaat.ruweScore) }
+  const huidigPercentage = levelPercentages.value[gekozenLevel.value] ?? 0
+  levelPercentages.value = {
+    ...levelPercentages.value,
+    [gekozenLevel.value]: Math.max(huidigPercentage, resultaat.percentage),
+  }
+
+  if (levelStartTijd.value !== null && Date.now() - levelStartTijd.value < 30000) {
+    snelleHandenBehaald.value = true
+  }
+
   huidigScherm.value = 'einde'
 }
 
@@ -549,6 +642,7 @@ function speelLevelOpnieuw() {
   resetBord()
   tutorialStap.value = gekozenLevel.value === 1 ? 0 : -1
   tutorialComboGetoond.value = false
+  levelStartTijd.value = Date.now()
   huidigScherm.value = 'spel'
 }
 
@@ -567,17 +661,22 @@ function openVolgendLevel() {
   <StartScherm
     v-if="huidigScherm === 'start'"
     @start="huidigScherm = 'introductie'"
+    @uitleg="huidigScherm = 'introductie'"
   />
 
   <IntroductieScherm
     v-else-if="huidigScherm === 'introductie'"
     @begin="huidigScherm = 'levelKeuze'"
+    @terug="huidigScherm = 'start'"
   />
 
   <LevelKeuzeScherm
     v-else-if="huidigScherm === 'levelKeuze'"
     :levels="levels"
     :hoogste-voltooide-level="hoogsteVoltooideLevel"
+    :voltooide-levels="voltooideLevels"
+    :level-sterren="levelSterren"
+    :totale-score="totaleScore"
     @open-gerechten="huidigScherm = 'gerechten'"
     @open-level="openLevel"
     @open-planten="openAllePlantenVanuitLevelKeuze"
@@ -588,6 +687,10 @@ function openVolgendLevel() {
     v-else-if="huidigScherm === 'gerechten'"
     :gerechten="gerechten"
     :hoogste-voltooide-level="hoogsteVoltooideLevel"
+    :voltooide-levels="voltooideLevels"
+    :totaal-levels="levels.length"
+    :totale-score="totaleScore"
+    :snelle-handen-behaald="snelleHandenBehaald"
     @levels="huidigScherm = 'levelKeuze'"
     @open-planten="openPlantenInfo('gerechten')"
   />
@@ -605,7 +708,7 @@ function openVolgendLevel() {
   <LevelDrieUitlegScherm
     v-else-if="huidigScherm === 'levelUitleg'"
     :level="actiefLevel"
-    @start="huidigScherm = 'spel'"
+    @start="startSpelVanuitUitleg"
     @terug="huidigScherm = 'levelKeuze'"
   />
 

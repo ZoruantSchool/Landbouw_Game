@@ -4,7 +4,9 @@ import type { TerreinSoort } from '../../../types/spel'
 import type { LevelConfig } from '../../../data/levels/types'
 import { voedselbosItems } from '../../../data/planten'
 import studiestapLogo from '../../../assets/studiestap-logo.svg'
-import feestTafel from '../../../assets/eindscherm-feesttafel.png'
+import eettafel from '../../../assets/diner/Eettafel.png'
+import goudBord from '../../../assets/diner/Goud bord.png'
+import leegBord from '../../../assets/diner/Leeg bord.png'
 import sterBehaald from '../../../assets/resultaat-ster-behaald.png'
 import sterOnbehaald from '../../../assets/resultaat-ster-onbehaald.png'
 
@@ -41,7 +43,25 @@ const score = computed(() => props.scoreResultaat?.percentage ?? 0)
 const sterren = computed(() => (score.value >= 80 ? 3 : score.value >= 50 ? 2 : 1))
 const toonResultaten = ref(false)
 const gastenGeserveerd = computed(() => Math.max(1, Math.min(10, Math.round(score.value / 10))))
+const bordPosities = [
+  { left: 26, top: 41 },
+  { left: 38, top: 41 },
+  { left: 50, top: 41 },
+  { left: 62, top: 41 },
+  { left: 74, top: 41 },
+  { left: 26, top: 59 },
+  { left: 38, top: 59 },
+  { left: 50, top: 59 },
+  { left: 62, top: 59 },
+  { left: 74, top: 59 },
+]
+function bordStijl(index: number) {
+  const pos = bordPosities[index]
+  return { left: `${pos.left}%`, top: `${pos.top}%` }
+}
 const gemisteCombos = computed(() => props.scoreResultaat?.combos.filter((combo) => !combo.actief) ?? [])
+const maxComboPunten = computed(() => props.levelConfig.combos.reduce((totaal, combo) => totaal + combo.bonus, 0))
+const maxBasisPunten = computed(() => Math.max(0, props.levelConfig.maximaleScore - maxComboPunten.value))
 const feedback = computed(() => {
   if (score.value >= 80) return 'Perfecte balans. Je hebt het voedselbos als systeem laten werken. Dit is agroforestry.'
   if (score.value >= 50) return "Goed begin. Maar kijk nog eens naar de gemiste combo's. Denk in lagen en zones."
@@ -72,6 +92,9 @@ function verbeterTip(comboId: string) {
   if (comboId === 'lagencombo') return 'Plaats daslook direct rond een walnootboom of hazelaar.'
   if (comboId === 'beekdalcombo') return 'Zet vlier en wilde aardbeien naast elkaar bij de oever.'
   if (comboId === 'bosrandcombo') return 'Plaats daslook in de invloedszone van de wilde appel.'
+  if (comboId === 'bodemcombo') return 'Zet wilde knoflook en brandnetel naast elkaar op de akker.'
+  if (comboId === 'schaduwcombo') return 'Zet munt direct naast de kersenboom.'
+  if (comboId === 'klaverbodemcombo') return 'Zet klaver dicht bij de invloedszone van de kersenboom, op de akker.'
   return 'Zet wilde knoflook en brandnetel naast elkaar op de akker.'
 }
 </script>
@@ -93,7 +116,17 @@ function verbeterTip(comboId: string) {
         <span v-for="ster in 3" :key="ster" :class="{ leeg: ster > sterren }">★</span>
       </div>
 
-      <img class="feest-tafel" :src="feestTafel" alt="" aria-hidden="true" />
+      <div class="feest-tafel-wrap">
+        <img class="feest-tafel" :src="eettafel" alt="" aria-hidden="true" />
+        <img
+          v-for="(pos, index) in bordPosities"
+          :key="index"
+          class="feest-bord"
+          :src="index < gastenGeserveerd ? goudBord : leegBord"
+          :style="bordStijl(index)"
+          alt=""
+        />
+      </div>
 
       <h2>{{ gastenGeserveerd }} van de 10 gasten geserveerd</h2>
       <p class="feest-score">Met een score van {{ score }}/100 serveer je vanavond dit gerecht:</p>
@@ -188,7 +221,9 @@ function verbeterTip(comboId: string) {
           />
         </div>
 
-        <strong class="optimale-metrics">Bio 28/28 · Opbr 23/23 · Kring 30/30 → 100%</strong>
+        <strong class="optimale-metrics">
+          Basis {{ maxBasisPunten }}/{{ maxBasisPunten }}<template v-if="maxComboPunten"> · Combo's {{ maxComboPunten }}/{{ maxComboPunten }}</template> → 100%
+        </strong>
         <aside class="wist-je-dat">
           <strong>Wist je dat?</strong>
           <p>Een voedselbos is niet wie het meest plant, maar wie de planten het best laat samenwerken: lagen, bodem en water versterken elkaar.</p>
@@ -219,7 +254,7 @@ function verbeterTip(comboId: string) {
           <p>{{ levelConfig.gerecht ?? `Beloning voor ${levelConfig.titel}` }}</p>
           <span>
             Je haalde:
-            {{ level === 1 ? 'walnoot · Bosaardbei · vlierbes' : 'walnoot · hazelaar · vlier · daslook · aardbeien' }}
+            {{ level === 1 ? 'walnoot · Bosaardbei · vlierbes' : level === 2 ? 'kersenboom · bramen · frambozen · munt · klaver' : 'walnoot · hazelaar · vlier · daslook · aardbeien' }}
           </span>
         </div>
       </section>
@@ -265,17 +300,19 @@ function verbeterTip(comboId: string) {
 .einde-kop { display: flex; height: 66px; align-items: center; justify-content: space-between; padding: 0 28px; border-bottom: 1px solid #2d5932; background: #071b0d; }
 .einde-kop img { display: block; width: 63px; height: auto; }
 .einde-kop span { color: #719176; font-size: 16px; }
-.feest-scherm { position: relative; display: grid; min-height: calc(100dvh - 66px); place-items: center; align-content: center; overflow: hidden; background: radial-gradient(circle at 50% 20%, #1d552b 0, #123d21 42%, #0e3319 100%); padding: 24px 24px 36px; text-align: center; }
-.feest-scherm h1 { color: #dda915; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(42px, 6vw, 62px); line-height: 1; }
-.feest-scherm > p { margin-top: 10px; color: #a6b99d; font-size: 13px; }
-.feest-sterren { display: flex; gap: 34px; margin-top: 14px; color: #e4ad1a; font-size: 34px; line-height: 1; }
+.feest-scherm { position: relative; display: grid; min-height: calc(100dvh - 66px); place-items: center; align-content: center; overflow: hidden; background: radial-gradient(circle at 50% 20%, #1d552b 0, #123d21 42%, #0e3319 100%); padding: 6px 24px 8px; text-align: center; }
+.feest-scherm h1 { color: #dda915; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(26px, 4vw, 38px); line-height: 1; }
+.feest-scherm > p { margin-top: 2px; color: #a6b99d; font-size: 13px; }
+.feest-sterren { display: flex; gap: 34px; margin-top: 4px; color: #e4ad1a; font-size: 22px; line-height: 1; }
 .feest-sterren .leeg { color: transparent; -webkit-text-stroke: 2px #e4ad1a; text-stroke: 2px #e4ad1a; }
-.feest-tafel { width: min(88vw, 1100px); margin-top: 28px; filter: drop-shadow(0 16px 18px rgba(0, 0, 0, .32)); }
-.feest-scherm h2 { margin-top: 22px; color: #dda915; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(25px, 3vw, 34px); }
-.feest-score { margin-top: 10px; color: #b8c8af; font-size: 13px; }
-.feest-scherm strong { margin-top: 8px; color: #e3c45b; font-family: Georgia, 'Times New Roman', serif; font-size: 14px; font-style: italic; }
-.feest-acties { display: flex; gap: 18px; justify-content: center; margin-top: 42px; }
-.feest-acties button.compact { width: 170px; min-height: 48px; border-radius: 8px; font-size: 13px; }
+.feest-tafel-wrap { position: relative; width: min(94vw, 1600px, calc(65dvh * 1.666)); margin-top: -6dvh; }
+.feest-tafel { display: block; width: 100%; filter: drop-shadow(0 16px 18px rgba(0, 0, 0, .32)); }
+.feest-bord { position: absolute; width: 7.5%; transform: translate(-50%, -50%); filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .35)); }
+.feest-scherm h2 { margin-top: -16dvh; color: #dda915; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(20px, 2.4vw, 26px); }
+.feest-score { margin-top: 2px; color: #b8c8af; font-size: 13px; }
+.feest-scherm strong { margin-top: 2px; color: #e3c45b; font-family: Georgia, 'Times New Roman', serif; font-size: 14px; font-style: italic; }
+.feest-acties { display: flex; gap: 18px; justify-content: center; margin-top: 8px; }
+.feest-acties button.compact { width: 170px; min-height: 42px; border-radius: 8px; font-size: 13px; }
 .feest-decor { position: absolute; width: 180px; height: 120px; border-radius: 50%; background: rgba(104, 169, 89, .14); pointer-events: none; }
 .feest-decor.links { top: -52px; left: -68px; }
 .feest-decor.rechts { right: -62px; bottom: -58px; }

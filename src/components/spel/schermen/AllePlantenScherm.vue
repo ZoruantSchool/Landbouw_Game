@@ -16,11 +16,13 @@ defineEmits<{
   sluiten: []
 }>()
 
+const tutorialDuplicaten = ['elstarboom', 'level1_vlier']
+
 const geselecteerdId = ref(props.startPlantId ?? planten[0]?.id ?? '')
 const zichtbarePlanten = computed(() =>
   props.plantIds?.length
     ? planten.filter((plant) => props.plantIds?.includes(plant.id ?? ''))
-    : planten,
+    : planten.filter((plant) => !tutorialDuplicaten.includes(plant.id ?? '')),
 )
 const geselecteerdePlant = computed(() =>
   zichtbarePlanten.value.find((plant) => plant.id === geselecteerdId.value) ?? zichtbarePlanten.value[0] ?? planten[0]!,

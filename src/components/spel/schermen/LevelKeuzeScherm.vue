@@ -5,6 +5,9 @@ import type { LevelConfig } from '../../../data/levels/types'
 const props = defineProps<{
   levels: readonly LevelConfig[]
   hoogsteVoltooideLevel: number
+  voltooideLevels?: number[]
+  levelSterren?: Record<string, number>
+  totaleScore?: number
 }>()
 
 const emit = defineEmits<{
@@ -15,7 +18,7 @@ const emit = defineEmits<{
 }>()
 
 function isVoltooid(level: number) {
-  return level <= props.hoogsteVoltooideLevel
+  return props.voltooideLevels?.includes(level) ?? false
 }
 
 function isVergrendeld(level: number) {
@@ -36,6 +39,11 @@ function statusVoor(level: number) {
   }
 
   return props.levels.find((configuratie) => configuratie.nummer === level)?.uitgelicht ? 'Nog te doen' : 'Beschikbaar'
+}
+
+function sterrenVoor(level: number) {
+  const aantal = props.levelSterren?.[level] ?? 0
+  return '★'.repeat(aantal)
 }
 
 function knopVoor(level: number) {
@@ -85,7 +93,7 @@ function knopVoor(level: number) {
         >
           <div class="kaart-status">
             <span>{{ statusVoor(level.nummer) }}</span>
-            <strong>{{ isVoltooid(level.nummer) ? '★★★' : '' }}</strong>
+            <strong>{{ sterrenVoor(level.nummer) }}</strong>
           </div>
 
           <img :src="level.afbeelding" :alt="`Illustratie voor level ${level.nummer}: ${level.titel}`" />
@@ -121,7 +129,7 @@ function knopVoor(level: number) {
       </div>
     </section>
 
-    <footer class="level-voet">Totale score: {{ hoogsteVoltooideLevel * 220 }} pts</footer>
+    <footer class="level-voet">Totale score: {{ totaleScore ?? 0 }} pts</footer>
   </main>
 </template>
 

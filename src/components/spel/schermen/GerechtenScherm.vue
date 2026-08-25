@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import studiestapLogo from '../../../assets/studiestap-logo.svg'
 import bessenjamBeeld from '../../../assets/gerecht-wilde-bessenjam.png'
 import kruidensaladeBeeld from '../../../assets/gerecht-kruidensalade.png'
@@ -10,6 +11,10 @@ import walnootHazelnootpastaBeeld from '../../../assets/level-3-walnoot-hazelnoo
 const props = defineProps<{
   gerechten: string[]
   hoogsteVoltooideLevel: number
+  voltooideLevels?: number[]
+  totaalLevels?: number
+  totaleScore?: number
+  snelleHandenBehaald?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -27,14 +32,38 @@ const receptKaarten = [
 ]
 
 function isOntgrendeld(vereistLevel: number) {
-  return props.hoogsteVoltooideLevel >= vereistLevel
+  return props.voltooideLevels?.includes(vereistLevel) ?? false
 }
 
-const achievements = [
-  { icoon: '🐝', naam: 'Bijenredder', omschrijving: 'Maak 3 bijen-combo’s in één sessie.', status: '✓ Behaald' },
-  { icoon: '🌈', naam: 'Snelle handen', omschrijving: 'Voltooi een level in minder dan 30 seconden.', status: '✓ Behaald' },
-  { icoon: '🌱', naam: 'Grondbeheerder', omschrijving: 'Bereik 100% bodemkwaliteit in level 3.', status: 'Level 3', vergrendeld: true },
-]
+const aantalGerechtenOntgrendeld = computed(() => receptKaarten.filter((recept) => isOntgrendeld(recept.vereistLevel)).length)
+
+const achievements = computed(() => [
+  {
+    icoon: '🐝',
+    naam: 'Bijenredder',
+    omschrijving: 'Maak 3 bijen-combo’s in één sessie.',
+    behaald: false,
+    status: 'Nog niet behaald',
+    vergrendeld: false,
+  },
+  {
+    icoon: '🌈',
+    naam: 'Snelle handen',
+    omschrijving: 'Voltooi een level in minder dan 30 seconden.',
+    behaald: props.snelleHandenBehaald ?? false,
+    status: props.snelleHandenBehaald ? '✓ Behaald' : 'Nog niet behaald',
+    vergrendeld: false,
+  },
+  {
+    icoon: '🌱',
+    naam: 'Grondbeheerder',
+    omschrijving: 'Bereik 100% bodemkwaliteit in level 3.',
+    behaald: false,
+    status: 'Level 3',
+    vergrendeld: true,
+  },
+])
+const aantalAchievementsBehaald = computed(() => achievements.value.filter((achievement) => achievement.behaald).length)
 </script>
 
 <template>
@@ -53,10 +82,10 @@ const achievements = [
       <h1>Jouw voortgang</h1>
 
       <section class="statistieken" aria-label="Voortgang">
-        <article><strong>660</strong><span>Totale score</span></article>
-        <article><strong>2/3</strong><span>Levels voltooid</span></article>
-        <article><strong>4/8</strong><span>Gerechten</span></article>
-        <article><strong>7/20</strong><span>Achievements</span></article>
+        <article><strong>{{ totaleScore ?? 0 }}</strong><span>Totale score</span></article>
+        <article><strong>{{ voltooideLevels?.length ?? 0 }}/{{ totaalLevels ?? 3 }}</strong><span>Levels voltooid</span></article>
+        <article><strong>{{ aantalGerechtenOntgrendeld }}/{{ receptKaarten.length }}</strong><span>Gerechten</span></article>
+        <article><strong>{{ aantalAchievementsBehaald }}/{{ achievements.length }}</strong><span>Achievements</span></article>
       </section>
 
       <h2>Gerechten ontgrendeld</h2>

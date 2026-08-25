@@ -4,6 +4,7 @@ import studiestapLogo from '../../../assets/studiestap-logo.svg'
 
 defineEmits<{
   begin: []
+  terug: []
 }>()
 
 const leerwegen = [
@@ -38,6 +39,7 @@ const leerwegen = [
   <main class="introductie-scherm">
     <header class="introductie-kop">
       <img :src="studiestapLogo" alt="Studie-Stap, workshops voor scholieren" />
+      <button type="button" class="terug-knop" @click="$emit('terug')">← Terug</button>
     </header>
 
     <section class="introductie-beeld">
@@ -97,6 +99,7 @@ const leerwegen = [
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 8px 24px;
   background: #071b0d;
 }
@@ -104,6 +107,23 @@ const leerwegen = [
 .introductie-kop img {
   width: 96px;
   height: auto;
+}
+
+.terug-knop {
+  border: 1px solid #2e6833;
+  border-radius: 7px;
+  background: #123417;
+  color: #86c978;
+  padding: 9px 15px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.terug-knop:hover,
+.terug-knop:focus-visible {
+  border-color: #65bc4d;
+  background: #1a4820;
+  color: #e1f2d7;
 }
 
 .introductie-beeld {
